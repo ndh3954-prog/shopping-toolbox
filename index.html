@@ -203,6 +203,11 @@
         <h3>썸네일 생성기</h3>
         <p>상품 정보와 스타일을 입력하면 AI로 썸네일 이미지 시안을 만들어줍니다.</p>
       </div>
+      <div class="tool-card" id="card-formats">
+        <div class="glyph">F</div>
+        <h3>상세페이지 포맷 관리</h3>
+        <p>자주 쓰는 상세페이지 섹션 구조를 이름 붙여 저장하고, 생성할 때 골라 쓸 수 있습니다.</p>
+      </div>
     </div>
   </section>
 
@@ -245,6 +250,14 @@
               <option value="etc">기타</option>
             </select>
           </div>
+        </div>
+
+        <div class="field">
+          <label>상세페이지 포맷 <span style="color:var(--text-faint)">(선택)</span></label>
+          <select id="formatSelect">
+            <option value="">기본 (플랫폼 자동 구조)</option>
+          </select>
+          <div class="hint">직접 만든 포맷을 쓰려면 <b>상세페이지 포맷 관리</b>에서 먼저 저장해주세요.</div>
         </div>
 
         <div class="field">
@@ -398,6 +411,39 @@
     </div>
   </section>
 
+  <!-- ================= 툴: 상세페이지 포맷 관리 ================= -->
+  <section id="view-formats" class="hidden">
+    <div class="back-link" id="backFromFormats">← 대시보드로</div>
+
+    <div class="tool-layout">
+      <!-- 편집 패널 -->
+      <div class="panel">
+        <h2 id="formatEditorTitle">새 포맷 만들기</h2>
+
+        <div class="field">
+          <label>포맷 이름</label>
+          <input type="text" id="formatNameInput" placeholder="예: 프리미엄 선물세트형">
+        </div>
+
+        <div class="field">
+          <label>섹션 구조 지침</label>
+          <textarea id="formatStructureInput" style="min-height:150px" placeholder="예: [브랜드 스토리] → [선물 포인트 3가지] → [상세 설명] → [구성품 안내] → [배송/포장 안내] → [자주 묻는 질문]"></textarea>
+          <div class="hint">AI에게 "이 순서/구성으로 상세페이지를 써라"라고 지시하는 부분이에요. 화살표(→)로 섹션을 구분해서 원하는 순서대로 적어주세요.</div>
+        </div>
+
+        <button class="btn-primary" id="saveFormatBtn">포맷 저장</button>
+        <button class="btn-ghost" id="cancelFormatEditBtn" style="width:100%;margin-top:8px;">새 포맷으로 초기화</button>
+        <div class="status-line" id="formatStatusLine"></div>
+      </div>
+
+      <!-- 목록 패널 -->
+      <div class="panel">
+        <h2>저장된 포맷</h2>
+        <div class="history-list" id="formatList" style="max-height:560px;"></div>
+      </div>
+    </div>
+  </section>
+
 </main>
 
 <!-- ================= 설정 모달 ================= -->
@@ -471,6 +517,7 @@
   const LS_KEYS = "toolbox_api_keys";
   const LS_HISTORY = "toolbox_detailpage_history";
   const LS_THUMB_HISTORY = "toolbox_thumbnail_history";
+  const LS_FORMATS = "toolbox_detailpage_formats";
 
   function loadKeys(){
     try{ return JSON.parse(localStorage.getItem(LS_KEYS)) || {}; }catch(e){ return {}; }
@@ -494,33 +541,51 @@
     }
   }
 
+  function loadFormats(){
+    try{ return JSON.parse(localStorage.getItem(LS_FORMATS)) || []; }catch(e){ return []; }
+  }
+  function saveFormats(f){ localStorage.setItem(LS_FORMATS, JSON.stringify(f)); }
+
   // ---------------- 화면 전환 ----------------
   const viewDashboard = document.getElementById('view-dashboard');
   const viewDetailpage = document.getElementById('view-detailpage');
   const viewThumbnail = document.getElementById('view-thumbnail');
+  const viewFormats = document.getElementById('view-formats');
 
-  function showDashboard(){
-    viewDashboard.classList.remove('hidden');
+  function hideAllViews(){
+    viewDashboard.classList.add('hidden');
     viewDetailpage.classList.add('hidden');
     viewThumbnail.classList.add('hidden');
+    viewFormats.classList.add('hidden');
+  }
+  function showDashboard(){
+    hideAllViews();
+    viewDashboard.classList.remove('hidden');
   }
   function showDetailpage(){
-    viewDashboard.classList.add('hidden');
+    hideAllViews();
     viewDetailpage.classList.remove('hidden');
-    viewThumbnail.classList.add('hidden');
     renderHistory();
+    populateFormatSelect();
   }
   function showThumbnail(){
-    viewDashboard.classList.add('hidden');
-    viewDetailpage.classList.add('hidden');
+    hideAllViews();
     viewThumbnail.classList.remove('hidden');
     renderThumbHistory();
+  }
+  function showFormats(){
+    hideAllViews();
+    viewFormats.classList.remove('hidden');
+    resetFormatEditor();
+    renderFormatList();
   }
 
   document.getElementById('card-detailpage').addEventListener('click', showDetailpage);
   document.getElementById('card-thumbnail').addEventListener('click', showThumbnail);
+  document.getElementById('card-formats').addEventListener('click', showFormats);
   document.getElementById('backFromDetail').addEventListener('click', showDashboard);
   document.getElementById('backFromThumbnail').addEventListener('click', showDashboard);
+  document.getElementById('backFromFormats').addEventListener('click', showDashboard);
   document.getElementById('logoHome').addEventListener('click', showDashboard);
 
   // ---------------- 설정 모달 ----------------
@@ -566,6 +631,7 @@
       exportedAt: new Date().toISOString(),
       detailHistory: loadHistory(),
       thumbHistory: loadThumbHistory(),
+      detailFormats: loadFormats(),
     };
     if(includeKeys) payload.apiKeys = loadKeys();
 
@@ -617,12 +683,21 @@
 
       const importedDetail = Array.isArray(data.detailHistory) ? data.detailHistory : [];
       const importedThumb = Array.isArray(data.thumbHistory) ? data.thumbHistory : [];
+      const importedFormats = Array.isArray(data.detailFormats) ? data.detailFormats : [];
 
       const mergedDetail = mergeHistory(loadHistory(), importedDetail, 100);
       saveHistory(mergedDetail);
 
       const mergedThumb = mergeHistory(loadThumbHistory(), importedThumb, 30);
       const thumbOk = saveThumbHistory(mergedThumb);
+
+      if(importedFormats.length > 0){
+        const existingFormats = loadFormats();
+        const existingIds = new Set(existingFormats.map(f => f.id));
+        const newFormats = importedFormats.filter(f => f && f.id && !existingIds.has(f.id));
+        saveFormats(existingFormats.concat(newFormats));
+        populateFormatSelect();
+      }
 
       let keysApplied = false;
       const importIncludeKeys = document.getElementById('importIncludeKeys').checked;
@@ -643,7 +718,7 @@
         setBackupStatus("상세페이지 기록은 가져왔지만, 썸네일 기록은 저장 공간 부족으로 일부만 반영됐을 수 있습니다.", "err");
       }else{
         setBackupStatus(
-          `가져오기 완료 (상세페이지 ${importedDetail.length}건, 썸네일 ${importedThumb.length}건 확인${keysApplied ? ", API 키 적용" : ""})`,
+          `가져오기 완료 (상세페이지 ${importedDetail.length}건, 썸네일 ${importedThumb.length}건, 포맷 ${importedFormats.length}건 확인${keysApplied ? ", API 키 적용" : ""})`,
           "ok"
         );
       }
@@ -679,12 +754,16 @@
     coupang: `[쿠팡 상세페이지 작성 규칙]
 - "로켓배송", "로켓와우" 등 쿠팡 자체 배송 서비스 명칭은 실제 해당 사항이 없다면 절대 사용하지 마세요.
 - 최상급 표현(업계 1위, 100% 등)이나 의학적 효능 암시는 근거 없이 쓰지 마세요.
-- 실제 입력된 배송 정보만 사용하고, 임의로 배송 조건을 만들어내지 마세요.
-- 구조: [핵심 헤드카피] → [3줄 요약] → [상세 설명] → [신뢰 정보/원산지] → [배송 및 교환/반품 안내] → [자주 묻는 질문 3개]`,
+- 실제 입력된 배송 정보만 사용하고, 임의로 배송 조건을 만들어내지 마세요.`,
     naver: `[네이버쇼핑(스마트스토어) 상세페이지 작성 규칙]
 - 네이버 검색 노출에 도움이 되도록 상품명과 핵심 키워드를 본문 안에 자연스럽게 2~3회 반복하세요.
-- 과장/허위 광고 표현은 피하고, 입력된 사실 정보만 사용하세요.
-- 구조: [검색 키워드를 포함한 헤드카피] → [핵심 특징 요약] → [상세 설명] → [신뢰 정보/원산지] → [배송 및 교환/반품 안내] → [자주 묻는 질문 3개]`
+- 과장/허위 광고 표현은 피하고, 입력된 사실 정보만 사용하세요.`
+  };
+
+  // 포맷을 따로 고르지 않았을 때 플랫폼별 기본 섹션 구조
+  const platformDefaultStructure = {
+    coupang: "[핵심 헤드카피] → [3줄 요약] → [상세 설명] → [신뢰 정보/원산지] → [배송 및 교환/반품 안내] → [자주 묻는 질문 3개]",
+    naver: "[검색 키워드를 포함한 헤드카피] → [핵심 특징 요약] → [상세 설명] → [신뢰 정보/원산지] → [배송 및 교환/반품 안내] → [자주 묻는 질문 3개]"
   };
 
   const categoryRules = {
@@ -708,6 +787,10 @@
     const platform = document.getElementById('platformSelect').value;
     const category = document.getElementById('categorySelect').value;
 
+    const formatId = document.getElementById('formatSelect').value;
+    const selectedFormat = formatId ? loadFormats().find(f => f.id === formatId) : null;
+    const structureText = selectedFormat ? selectedFormat.structureText : platformDefaultStructure[platform];
+
     const data = {
       productName: document.getElementById('productName').value.trim(),
       price: document.getElementById('price').value.trim(),
@@ -725,6 +808,7 @@
 결과는 바로 상세페이지에 옮겨 쓸 수 있도록 한국어로, 섹션 제목을 포함해 작성하세요.
 
 ${platformRules[platform]}
+- 구조: ${structureText}
 
 ${categoryRules[category]}`;
 
@@ -740,7 +824,7 @@ ${categoryRules[category]}`;
 - 인증/신뢰 정보: ${data.trustInfo || "(없음)"}
 - 기타 요청사항: ${data.extraReq || "(없음)"}`;
 
-    return { systemPrompt, userPrompt, productName: data.productName, platform, category };
+    return { systemPrompt, userPrompt, productName: data.productName, platform, category, formatName: selectedFormat ? selectedFormat.name : "" };
   }
 
   // ---------------- API 호출 ----------------
@@ -835,7 +919,7 @@ ${categoryRules[category]}`;
       return;
     }
 
-    const { systemPrompt, userPrompt, productName, platform, category } = buildPrompt();
+    const { systemPrompt, userPrompt, productName, platform, category, formatName } = buildPrompt();
 
     generateBtn.disabled = true;
     setStatus("생성 중입니다... (모델 응답을 기다리는 중)");
@@ -848,7 +932,7 @@ ${categoryRules[category]}`;
       else text = await callGrok(apiKey, modelName, systemPrompt, userPrompt);
 
       outputBox.textContent = text;
-      lastResult = { productName, platform, category, provider, modelName, text };
+      lastResult = { productName, platform, category, provider, modelName, text, formatName };
       setStatus("생성 완료.", "ok");
     }catch(err){
       setStatus(err.message || String(err), "err");
@@ -908,7 +992,7 @@ ${categoryRules[category]}`;
       const s = document.createElement('div');
       s.className = "s";
       const d = new Date(item.savedAt);
-      s.textContent = platformLabel[item.platform] + " · " + categoryLabel[item.category] + " · " + d.toLocaleString('ko-KR');
+      s.textContent = platformLabel[item.platform] + " · " + categoryLabel[item.category] + (item.formatName ? " · 포맷: " + item.formatName : "") + " · " + d.toLocaleString('ko-KR');
       meta.appendChild(t); meta.appendChild(s);
 
       const del = document.createElement('div');
@@ -936,6 +1020,142 @@ ${categoryRules[category]}`;
   }
 
   renderHistory();
+
+  // ---------------- 상세페이지 포맷 관리 ----------------
+  const formatStatusLine = document.getElementById('formatStatusLine');
+  const formatNameInput = document.getElementById('formatNameInput');
+  const formatStructureInput = document.getElementById('formatStructureInput');
+  const formatEditorTitle = document.getElementById('formatEditorTitle');
+  let editingFormatId = null;
+
+  function setFormatStatus(msg, kind){
+    formatStatusLine.textContent = msg;
+    formatStatusLine.className = "status-line" + (kind ? " " + kind : "");
+  }
+
+  function resetFormatEditor(){
+    editingFormatId = null;
+    formatNameInput.value = "";
+    formatStructureInput.value = "";
+    formatEditorTitle.textContent = "새 포맷 만들기";
+    setFormatStatus("");
+  }
+
+  document.getElementById('cancelFormatEditBtn').addEventListener('click', resetFormatEditor);
+
+  document.getElementById('saveFormatBtn').addEventListener('click', () => {
+    const name = formatNameInput.value.trim();
+    const structureText = formatStructureInput.value.trim();
+    if(!name || !structureText){
+      setFormatStatus("포맷 이름과 섹션 구조 지침을 모두 입력해주세요.", "err");
+      return;
+    }
+
+    const formats = loadFormats();
+    if(editingFormatId){
+      const idx = formats.findIndex(f => f.id === editingFormatId);
+      if(idx !== -1){
+        formats[idx] = { ...formats[idx], name, structureText };
+      }
+    }else{
+      formats.unshift({ id: Date.now().toString(36), name, structureText, savedAt: new Date().toISOString() });
+    }
+    saveFormats(formats);
+    renderFormatList();
+    populateFormatSelect();
+    setFormatStatus("저장했습니다.", "ok");
+    resetFormatEditor();
+  });
+
+  function renderFormatList(){
+    const list = document.getElementById('formatList');
+    const formats = loadFormats();
+    list.innerHTML = "";
+    if(formats.length === 0){
+      const empty = document.createElement('div');
+      empty.className = "empty-note";
+      empty.textContent = "아직 저장된 포맷이 없습니다. 왼쪽에서 새 포맷을 만들어보세요.";
+      list.appendChild(empty);
+      return;
+    }
+    formats.forEach((item) => {
+      const row = document.createElement('div');
+      row.className = "history-item";
+
+      const meta = document.createElement('div');
+      meta.className = "meta";
+      const t = document.createElement('div');
+      t.className = "t";
+      t.textContent = item.name;
+      const s = document.createElement('div');
+      s.className = "s";
+      s.textContent = item.structureText;
+      meta.appendChild(t); meta.appendChild(s);
+
+      const actions = document.createElement('div');
+      actions.style.display = "flex";
+      actions.style.gap = "8px";
+      actions.style.flexShrink = "0";
+
+      const dup = document.createElement('div');
+      dup.className = "del";
+      dup.textContent = "복제";
+      dup.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const formats2 = loadFormats();
+        formats2.unshift({ id: Date.now().toString(36), name: item.name + " (복제)", structureText: item.structureText, savedAt: new Date().toISOString() });
+        saveFormats(formats2);
+        renderFormatList();
+        populateFormatSelect();
+        setFormatStatus("복제했습니다.", "ok");
+      });
+
+      const del = document.createElement('div');
+      del.className = "del";
+      del.textContent = "✕";
+      del.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const formats2 = loadFormats().filter(f => f.id !== item.id);
+        saveFormats(formats2);
+        if(editingFormatId === item.id) resetFormatEditor();
+        renderFormatList();
+        populateFormatSelect();
+        setFormatStatus("삭제했습니다.", "ok");
+      });
+
+      actions.appendChild(dup);
+      actions.appendChild(del);
+
+      row.addEventListener('click', () => {
+        editingFormatId = item.id;
+        formatNameInput.value = item.name;
+        formatStructureInput.value = item.structureText;
+        formatEditorTitle.textContent = "포맷 수정: " + item.name;
+        setFormatStatus("");
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      });
+
+      row.appendChild(meta);
+      row.appendChild(actions);
+      list.appendChild(row);
+    });
+  }
+
+  function populateFormatSelect(){
+    const select = document.getElementById('formatSelect');
+    const prevValue = select.value;
+    const formats = loadFormats();
+    select.innerHTML = '<option value="">기본 (플랫폼 자동 구조)</option>';
+    formats.forEach(f => {
+      const opt = document.createElement('option');
+      opt.value = f.id;
+      opt.textContent = f.name;
+      select.appendChild(opt);
+    });
+    if(formats.some(f => f.id === prevValue)) select.value = prevValue;
+  }
+
+  populateFormatSelect();
 
   // ================= 썸네일 생성기 =================
 
