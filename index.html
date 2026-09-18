@@ -242,6 +242,33 @@
   .figma-card .body a{font-size:11px;color:var(--accent);text-decoration:none;display:inline-block;margin-top:4px;}
   .figma-card .body a:hover{text-decoration:underline;}
 
+  /* ---------- AI 디자인 스튜디오 ---------- */
+  .studio-layout{display:flex;gap:20px;align-items:flex-start;flex-wrap:wrap;}
+  .studio-canvas-wrap{
+    background:var(--surface-2);border:1px solid var(--border);border-radius:var(--radius);
+    padding:20px;display:flex;align-items:center;justify-content:center;flex:1;min-width:320px;
+  }
+  .studio-canvas-wrap canvas{border-radius:6px;box-shadow:0 4px 20px rgba(0,0,0,.25);}
+  .studio-side{width:280px;flex-shrink:0;display:flex;flex-direction:column;gap:16px;}
+  .studio-side .panel{padding:18px;}
+  .studio-side h3{margin:0 0 10px;font-size:12.5px;color:var(--text-dim);font-weight:600;}
+  .studio-row{display:flex;gap:8px;align-items:center;margin-bottom:10px;}
+  .studio-row label{font-size:12px;color:var(--text-dim);flex-shrink:0;width:64px;}
+  .studio-row input[type=range]{flex:1;}
+  .studio-btn-row{display:flex;gap:8px;flex-wrap:wrap;}
+  .studio-btn-row .btn-ghost{flex:1;min-width:100px;}
+  .studio-design-list{display:flex;flex-direction:column;gap:8px;max-height:220px;overflow-y:auto;}
+  .studio-design-item{
+    display:flex;align-items:center;gap:10px;background:var(--surface-2);border:1px solid var(--border);
+    border-radius:7px;padding:8px 10px;cursor:pointer;font-size:12.5px;
+  }
+  .studio-design-item:hover{border-color:var(--accent-dim);}
+  .studio-design-item img{width:36px;height:36px;object-fit:cover;border-radius:5px;background:#fff;flex-shrink:0;}
+  .studio-design-item .meta{flex:1;overflow:hidden;}
+  .studio-design-item .meta .t{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--text);}
+  .studio-design-item .del{color:var(--text-faint);flex-shrink:0;}
+  .studio-design-item .del:hover{color:var(--danger);}
+
   /* ---------- 설정 모달 ---------- */
   .modal-backdrop{
     position:fixed;inset:0;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;
@@ -324,6 +351,11 @@
         <div class="glyph">🪧</div>
         <h3>AI 배너 디자이너</h3>
         <p>브랜드 무드·컬러·문구를 고르면 AI가 상세페이지용 프로모션 배너 이미지를 만들어줍니다.</p>
+      </div>
+      <div class="tool-card" id="card-studio">
+        <div class="glyph">🖌️</div>
+        <h3>AI 디자인 스튜디오</h3>
+        <p>Canva처럼 텍스트·이미지를 직접 옮기고 편집하는 캔버스. AI가 톤·색상·문구를 먼저 추천해줍니다.</p>
       </div>
     </div>
   </section>
@@ -903,6 +935,106 @@
     </div>
   </section>
 
+  <!-- ================= 툴: AI 디자인 스튜디오 ================= -->
+  <section id="view-studio" class="hidden">
+    <div class="back-link" id="backFromStudio">← 대시보드로</div>
+
+    <div class="panel" style="margin-bottom:16px;">
+      <h2>1. 상품 정보 &amp; AI 추천</h2>
+      <div class="row2">
+        <div class="field">
+          <label>상품명</label>
+          <input type="text" id="studioProductName" placeholder="예: 제주 감귤 3kg">
+        </div>
+        <div class="field">
+          <label>사용할 AI 모델</label>
+          <select id="studioProviderSelect">
+            <option value="openai">OpenAI (ChatGPT)</option>
+            <option value="gemini">Google Gemini</option>
+            <option value="grok">xAI Grok</option>
+          </select>
+        </div>
+      </div>
+      <div class="row2">
+        <div class="field">
+          <label>헤드카피 힌트 <span style="color:var(--text-faint)">(선택, 비우면 AI가 작성)</span></label>
+          <input type="text" id="studioHeadlineHint" placeholder="예: SPECIAL EVENT">
+        </div>
+        <div class="field">
+          <label>서브 문구 힌트 <span style="color:var(--text-faint)">(선택)</span></label>
+          <input type="text" id="studioSubcopyHint" placeholder="예: 지금 주문하면 오늘 출발">
+        </div>
+      </div>
+      <div class="field">
+        <label>상품 사진 업로드 <span style="color:var(--text-faint)">(선택)</span></label>
+        <input type="file" id="studioImageInput" accept="image/*">
+      </div>
+      <button class="btn-primary" id="studioRecommendBtn" style="width:auto;">✨ AI 추천 받기 (캔버스 자동 구성)</button>
+      <div class="status-line" id="studioStatusLine"></div>
+      <div class="hint">AI 추천을 받으면 지금 캔버스 내용이 새 디자인으로 초기화돼요. 다시 받고 싶으면 언제든 버튼을 또 눌러주세요.</div>
+    </div>
+
+    <h2>2. 캔버스에서 직접 편집</h2>
+    <div class="studio-layout">
+      <div class="studio-canvas-wrap">
+        <canvas id="studioCanvasEl" width="500" height="500"></canvas>
+      </div>
+
+      <div class="studio-side">
+        <div class="panel">
+          <h3>배경 색상</h3>
+          <div class="studio-row">
+            <label>메인</label>
+            <input type="color" id="studioBgColor" value="#12151A">
+          </div>
+          <div class="studio-row">
+            <label>포인트</label>
+            <input type="color" id="studioAccentColor" value="#E0A458">
+          </div>
+        </div>
+
+        <div class="panel">
+          <h3>요소 추가</h3>
+          <div class="studio-btn-row">
+            <button class="btn-ghost" id="studioAddTextBtn">+ 텍스트</button>
+            <button class="btn-ghost" id="studioAddImageBtn">+ 이미지</button>
+          </div>
+          <input type="file" id="studioExtraImageInput" accept="image/*" class="hidden">
+        </div>
+
+        <div class="panel">
+          <h3>선택한 요소</h3>
+          <div class="studio-row">
+            <label>글자 크기</label>
+            <input type="range" id="studioFontSize" min="10" max="120" value="32">
+          </div>
+          <div class="studio-row">
+            <label>글자 색</label>
+            <input type="color" id="studioTextColor" value="#FFFFFF">
+          </div>
+          <button class="btn-ghost" id="studioDeleteBtn" style="width:100%;">선택 요소 삭제</button>
+          <div class="hint">텍스트를 더블클릭하면 내용을 직접 수정할 수 있어요.</div>
+        </div>
+
+        <div class="panel">
+          <h3>내보내기 &amp; 저장</h3>
+          <div class="studio-btn-row">
+            <button class="btn-primary" id="studioDownloadBtn">PNG 다운로드</button>
+          </div>
+          <div class="studio-btn-row" style="margin-top:8px;">
+            <button class="btn-ghost" id="studioSaveBtn">디자인 저장</button>
+            <button class="btn-ghost" id="studioClearBtn">캔버스 비우기</button>
+          </div>
+        </div>
+
+        <div class="panel">
+          <h3>저장된 디자인</h3>
+          <div class="studio-design-list" id="studioDesignList"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
 </main>
 
 <!-- ================= 설정 모달 ================= -->
@@ -973,6 +1105,7 @@
   </div>
 </div>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.1/fabric.min.js"></script>
 <script>
 (function(){
   "use strict";
@@ -987,6 +1120,7 @@
   const LS_CS_HISTORY = "toolbox_cs_history";
   const LS_FIGMA_FILES = "toolbox_figma_files";
   const LS_BANNER_HISTORY = "toolbox_banner_history";
+  const LS_STUDIO_DESIGNS = "toolbox_studio_designs";
 
   function loadKeys(){
     try{ return JSON.parse(localStorage.getItem(LS_KEYS)) || {}; }catch(e){ return {}; }
@@ -1047,6 +1181,18 @@
     }
   }
 
+  function loadStudioDesigns(){
+    try{ return JSON.parse(localStorage.getItem(LS_STUDIO_DESIGNS)) || []; }catch(e){ return []; }
+  }
+  function saveStudioDesigns(d){
+    try{
+      localStorage.setItem(LS_STUDIO_DESIGNS, JSON.stringify(d));
+      return true;
+    }catch(e){
+      return false;
+    }
+  }
+
   // ---------------- 테마(다크/라이트) ----------------
   const LS_THEME = "toolbox_theme";
   const themeToggleBtn = document.getElementById('themeToggleBtn');
@@ -1079,6 +1225,7 @@
   const viewAdmin = document.getElementById('view-admin');
   const viewFigma = document.getElementById('view-figma');
   const viewBanner = document.getElementById('view-banner');
+  const viewStudio = document.getElementById('view-studio');
 
   function hideAllViews(){
     viewDashboard.classList.add('hidden');
@@ -1090,6 +1237,7 @@
     viewAdmin.classList.add('hidden');
     viewFigma.classList.add('hidden');
     viewBanner.classList.add('hidden');
+    viewStudio.classList.add('hidden');
   }
   function showDashboard(){
     hideAllViews();
@@ -1139,6 +1287,12 @@
     viewBanner.classList.remove('hidden');
     renderBannerHistory();
   }
+  function showStudio(){
+    hideAllViews();
+    viewStudio.classList.remove('hidden');
+    initStudioCanvas();
+    renderStudioDesignList();
+  }
 
   document.getElementById('card-detailpage').addEventListener('click', showDetailpage);
   document.getElementById('card-thumbnail').addEventListener('click', showThumbnail);
@@ -1148,6 +1302,7 @@
   document.getElementById('card-admin').addEventListener('click', showAdmin);
   document.getElementById('card-figma').addEventListener('click', showFigma);
   document.getElementById('card-banner').addEventListener('click', showBanner);
+  document.getElementById('card-studio').addEventListener('click', showStudio);
   document.getElementById('backFromDetail').addEventListener('click', showDashboard);
   document.getElementById('backFromThumbnail').addEventListener('click', showDashboard);
   document.getElementById('backFromFormats').addEventListener('click', showDashboard);
@@ -1156,6 +1311,7 @@
   document.getElementById('backFromAdmin').addEventListener('click', showDashboard);
   document.getElementById('backFromFigma').addEventListener('click', showDashboard);
   document.getElementById('backFromBanner').addEventListener('click', showDashboard);
+  document.getElementById('backFromStudio').addEventListener('click', showDashboard);
   document.getElementById('logoHome').addEventListener('click', showDashboard);
 
   // ---------------- 설정 모달 ----------------
@@ -1208,6 +1364,7 @@
       csHistory: loadCSHistory(),
       csSettings: loadCSSettings(),
       bannerHistory: loadBannerHistory(),
+      studioDesigns: loadStudioDesigns(),
     };
     if(includeKeys) payload.apiKeys = loadKeys();
 
@@ -1263,6 +1420,7 @@
       const importedMargin = Array.isArray(data.marginHistory) ? data.marginHistory : [];
       const importedCSHistory = Array.isArray(data.csHistory) ? data.csHistory : [];
       const importedBanner = Array.isArray(data.bannerHistory) ? data.bannerHistory : [];
+      const importedStudio = Array.isArray(data.studioDesigns) ? data.studioDesigns : [];
 
       const mergedDetail = mergeHistory(loadHistory(), importedDetail, 100);
       saveHistory(mergedDetail);
@@ -1272,6 +1430,9 @@
 
       const mergedMargin = mergeHistory(loadMarginHistory(), importedMargin, 50);
       saveMarginHistory(mergedMargin);
+
+      const mergedStudio = mergeHistory(loadStudioDesigns(), importedStudio, 15);
+      const studioOk = saveStudioDesigns(mergedStudio);
 
       const mergedCSHistory = mergeHistory(loadCSHistory(), importedCSHistory, 100);
       saveCSHistory(mergedCSHistory);
@@ -1308,11 +1469,11 @@
       renderHistory();
       renderThumbHistory();
 
-      if(!thumbOk || !bannerOk){
-        setBackupStatus("대부분 가져왔지만, 이미지 기록(썸네일/배너) 일부는 저장 공간 부족으로 반영되지 않았을 수 있습니다.", "err");
+      if(!thumbOk || !bannerOk || !studioOk){
+        setBackupStatus("대부분 가져왔지만, 이미지·디자인 기록(썸네일/배너/스튜디오) 일부는 저장 공간 부족으로 반영되지 않았을 수 있습니다.", "err");
       }else{
         setBackupStatus(
-          `가져오기 완료 (상세페이지 ${importedDetail.length}건, 썸네일 ${importedThumb.length}건, 포맷 ${importedFormats.length}건, 마진계산 ${importedMargin.length}건, CS답변 ${importedCSHistory.length}건, 배너 ${importedBanner.length}건 확인${keysApplied ? ", API 키 적용" : ""})`,
+          `가져오기 완료 (상세페이지 ${importedDetail.length}건, 썸네일 ${importedThumb.length}건, 포맷 ${importedFormats.length}건, 마진계산 ${importedMargin.length}건, CS답변 ${importedCSHistory.length}건, 배너 ${importedBanner.length}건, 스튜디오 ${importedStudio.length}건 확인${keysApplied ? ", API 키 적용" : ""})`,
           "ok"
         );
       }
@@ -2107,7 +2268,7 @@ ${categoryRules[category]}`;
   }
 
   // ---------------- 관리자 페이지 ----------------
-  const ADMIN_STORAGE_KEYS = [LS_KEYS, LS_HISTORY, LS_THUMB_HISTORY, LS_FORMATS, LS_MARGIN_HISTORY, LS_CS_SETTINGS, LS_CS_HISTORY, LS_FIGMA_FILES, LS_BANNER_HISTORY];
+  const ADMIN_STORAGE_KEYS = [LS_KEYS, LS_HISTORY, LS_THUMB_HISTORY, LS_FORMATS, LS_MARGIN_HISTORY, LS_CS_SETTINGS, LS_CS_HISTORY, LS_FIGMA_FILES, LS_BANNER_HISTORY, LS_STUDIO_DESIGNS];
   const ASSUMED_QUOTA_BYTES = 5 * 1024 * 1024; // 브라우저마다 다르지만 보통 5MB 안팎
 
   function estimateStorageBytes(){
@@ -2128,6 +2289,7 @@ ${categoryRules[category]}`;
       { label: "CS 답변 기록", num: loadCSHistory().length },
       { label: "Figma 연결 파일", num: loadFigmaFiles().length },
       { label: "AI 배너 기록", num: loadBannerHistory().length },
+      { label: "디자인 스튜디오", num: loadStudioDesigns().length },
     ];
     const grid = document.getElementById('adminStatGrid');
     grid.innerHTML = "";
@@ -2156,6 +2318,7 @@ ${categoryRules[category]}`;
     loadMarginHistory().forEach(i => items.push({ type: "마진계산", title: i.productName || "(제목 없음)", savedAt: i.savedAt }));
     loadCSHistory().forEach(i => items.push({ type: "CS답변", title: i.typeLabel || "(제목 없음)", savedAt: i.savedAt }));
     loadBannerHistory().forEach(i => items.push({ type: "AI배너", title: i.productName || "(제목 없음)", savedAt: i.savedAt }));
+    loadStudioDesigns().forEach(i => items.push({ type: "디자인스튜디오", title: i.name || "(제목 없음)", savedAt: i.savedAt }));
 
     items.sort((a, b) => new Date(b.savedAt || 0) - new Date(a.savedAt || 0));
     const top = items.slice(0, 20);
@@ -2629,6 +2792,349 @@ ${categoryRules[category]}`;
         lastBannerResult = item;
         setBannerStatus("불러왔습니다: " + (item.productName || ""), "ok");
         window.scrollTo({ top: 0, behavior: 'smooth' });
+      });
+
+      row.appendChild(img);
+      row.appendChild(meta);
+      row.appendChild(del);
+      list.appendChild(row);
+    });
+  }
+
+  // ---------------- AI 디자인 스튜디오 ----------------
+  const studioStatusLine = document.getElementById('studioStatusLine');
+  function setStudioStatus(msg, kind){
+    studioStatusLine.textContent = msg;
+    studioStatusLine.className = "status-line" + (kind ? " " + kind : "");
+  }
+
+  let studioCanvas = null;
+  let studioUploadedImageDataUrl = null;
+
+  function syncStudioControls(){
+    const obj = studioCanvas.getActiveObject();
+    if(obj && obj.type === 'textbox'){
+      document.getElementById('studioFontSize').value = Math.round(obj.fontSize || 32);
+      if(/^#[0-9A-Fa-f]{6}$/i.test(obj.fill)) document.getElementById('studioTextColor').value = obj.fill;
+    }
+  }
+
+  function initStudioCanvas(){
+    if(studioCanvas) return;
+    studioCanvas = new fabric.Canvas('studioCanvasEl', {
+      backgroundColor: document.getElementById('studioBgColor').value,
+      preserveObjectStacking: true,
+    });
+    studioCanvas.on('selection:created', syncStudioControls);
+    studioCanvas.on('selection:updated', syncStudioControls);
+  }
+
+  function clearStudioObjects(){
+    if(!studioCanvas) return;
+    studioCanvas.getObjects().slice().forEach(o => studioCanvas.remove(o));
+  }
+
+  document.getElementById('studioImageInput').addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if(!file){ studioUploadedImageDataUrl = null; return; }
+    const reader = new FileReader();
+    reader.onload = () => { studioUploadedImageDataUrl = reader.result; };
+    reader.readAsDataURL(file);
+  });
+
+  function buildStudioRecommendPrompt(){
+    const productName = document.getElementById('studioProductName').value.trim();
+    const headlineHint = document.getElementById('studioHeadlineHint').value.trim();
+    const subcopyHint = document.getElementById('studioSubcopyHint').value.trim();
+
+    const systemPrompt =
+`당신은 한국 이커머스(쿠팡/네이버쇼핑) 상세페이지 배너 디자이너입니다.
+입력된 상품 정보를 참고해서 배너에 쓸 색상과 문구를 추천하세요.
+반드시 아래 JSON 형식으로만 응답하고, 다른 설명이나 코드블록 표시 없이 순수 JSON 텍스트만 출력하세요.
+
+{"mood": "무드에 대한 한 줄 설명", "bgColor": "#RRGGBB", "accentColor": "#RRGGBB", "textColor": "#RRGGBB", "headline": "헤드카피 문구", "subcopy": "서브 문구"}
+
+- bgColor는 배경으로 쓸 어둡거나 차분한 색, accentColor는 포인트로 쓸 선명한 색, textColor는 bgColor 위에서 잘 읽히는 색으로 추천하세요.
+- headline/subcopy는 한국어로, 각각 15자 이내로 짧게 작성하세요.`;
+
+    const userPrompt =
+`상품명: ${productName || "(미입력)"}
+헤드카피 힌트: ${headlineHint || "(직접 추천해줘)"}
+서브 문구 힌트: ${subcopyHint || "(직접 추천해줘)"}`;
+
+    return { systemPrompt, userPrompt, productName };
+  }
+
+  function parseStudioRecommendation(text){
+    let cleaned = text.trim();
+    const fenceMatch = cleaned.match(/```(?:json)?\s*([\s\S]*?)```/);
+    if(fenceMatch) cleaned = fenceMatch[1].trim();
+    let rec;
+    try{ rec = JSON.parse(cleaned); }
+    catch(e){ throw new Error("AI 응답을 해석하지 못했습니다. 다시 시도해주세요."); }
+
+    const hex = /^#[0-9A-Fa-f]{6}$/;
+    return {
+      mood: rec.mood || "",
+      bgColor: hex.test(rec.bgColor) ? rec.bgColor : "#12151A",
+      accentColor: hex.test(rec.accentColor) ? rec.accentColor : "#E0A458",
+      textColor: hex.test(rec.textColor) ? rec.textColor : "#FFFFFF",
+      headline: rec.headline || document.getElementById('studioHeadlineHint').value.trim() || "SPECIAL EVENT",
+      subcopy: rec.subcopy || document.getElementById('studioSubcopyHint').value.trim() || "",
+    };
+  }
+
+  function populateStudioCanvas(rec){
+    clearStudioObjects();
+    studioCanvas.backgroundColor = rec.bgColor;
+    document.getElementById('studioBgColor').value = rec.bgColor;
+    document.getElementById('studioAccentColor').value = rec.accentColor;
+    document.getElementById('studioTextColor').value = rec.textColor;
+
+    const accentBand = new fabric.Rect({
+      left: 0, top: 430, width: 500, height: 70, fill: rec.accentColor,
+    });
+    studioCanvas.add(accentBand);
+
+    const headline = new fabric.Textbox(rec.headline, {
+      left: 250, top: 90, originX: 'center', originY: 'center', width: 420,
+      fontSize: 40, fontWeight: '700', fill: rec.textColor, fontFamily: "'Noto Sans KR', sans-serif",
+      textAlign: 'center',
+    });
+    studioCanvas.add(headline);
+
+    if(rec.subcopy){
+      const subcopy = new fabric.Textbox(rec.subcopy, {
+        left: 250, top: 465, originX: 'center', originY: 'center', width: 420,
+        fontSize: 20, fill: rec.textColor, fontFamily: "'Noto Sans KR', sans-serif", textAlign: 'center',
+      });
+      studioCanvas.add(subcopy);
+    }
+
+    if(studioUploadedImageDataUrl){
+      fabric.Image.fromURL(studioUploadedImageDataUrl, (img) => {
+        const maxSize = 260;
+        const scale = Math.min(maxSize / img.width, maxSize / img.height);
+        img.scale(scale);
+        img.set({ left: 250, top: 270, originX: 'center', originY: 'center' });
+        studioCanvas.add(img);
+        studioCanvas.renderAll();
+      });
+    }
+
+    studioCanvas.renderAll();
+  }
+
+  const studioRecommendBtn = document.getElementById('studioRecommendBtn');
+  studioRecommendBtn.addEventListener('click', async () => {
+    initStudioCanvas();
+    const provider = document.getElementById('studioProviderSelect').value;
+    const modelName = defaultModelNames[provider];
+    const keys = loadKeys();
+    const apiKey = keys[provider];
+
+    if(!apiKey){
+      setStudioStatus("먼저 우측 상단 'API 키 설정'에서 " + provider + " 키를 입력해주세요.", "err");
+      return;
+    }
+    const { systemPrompt, userPrompt, productName } = buildStudioRecommendPrompt();
+    if(!productName){
+      setStudioStatus("상품명은 최소한 입력해주세요.", "err");
+      return;
+    }
+
+    studioRecommendBtn.disabled = true;
+    setStudioStatus("AI 추천 받는 중...");
+
+    try{
+      let text;
+      if(provider === "openai") text = await callOpenAI(apiKey, modelName, systemPrompt, userPrompt);
+      else if(provider === "gemini") text = await callGemini(apiKey, modelName, systemPrompt, userPrompt);
+      else text = await callGrok(apiKey, modelName, systemPrompt, userPrompt);
+
+      const rec = parseStudioRecommendation(text);
+      populateStudioCanvas(rec);
+      setStudioStatus("AI 추천을 캔버스에 반영했습니다. 요소를 클릭해서 직접 옮기거나 더블클릭해서 수정해보세요.", "ok");
+    }catch(err){
+      setStudioStatus(err.message || String(err), "err");
+    }finally{
+      studioRecommendBtn.disabled = false;
+    }
+  });
+
+  document.getElementById('studioAddTextBtn').addEventListener('click', () => {
+    initStudioCanvas();
+    const text = new fabric.Textbox('텍스트를 입력하세요', {
+      left: 250, top: 250, originX: 'center', originY: 'center', width: 300,
+      fontSize: 32, fill: document.getElementById('studioTextColor').value || '#FFFFFF',
+      fontFamily: "'Noto Sans KR', sans-serif", textAlign: 'center',
+    });
+    studioCanvas.add(text);
+    studioCanvas.setActiveObject(text);
+    studioCanvas.renderAll();
+  });
+
+  document.getElementById('studioAddImageBtn').addEventListener('click', () => {
+    document.getElementById('studioExtraImageInput').click();
+  });
+  document.getElementById('studioExtraImageInput').addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if(!file) return;
+    initStudioCanvas();
+    const reader = new FileReader();
+    reader.onload = () => {
+      fabric.Image.fromURL(reader.result, (img) => {
+        const maxSize = 200;
+        const scale = Math.min(maxSize / img.width, maxSize / img.height, 1);
+        img.scale(scale);
+        studioCanvas.add(img);
+        studioCanvas.centerObject(img);
+        studioCanvas.setActiveObject(img);
+        studioCanvas.renderAll();
+      });
+    };
+    reader.readAsDataURL(file);
+    e.target.value = "";
+  });
+
+  document.getElementById('studioFontSize').addEventListener('input', (e) => {
+    if(!studioCanvas) return;
+    const obj = studioCanvas.getActiveObject();
+    if(obj && obj.type === 'textbox'){
+      obj.set('fontSize', parseInt(e.target.value, 10));
+      studioCanvas.renderAll();
+    }
+  });
+  document.getElementById('studioTextColor').addEventListener('input', (e) => {
+    if(!studioCanvas) return;
+    const obj = studioCanvas.getActiveObject();
+    if(obj && obj.type === 'textbox'){
+      obj.set('fill', e.target.value);
+      studioCanvas.renderAll();
+    }
+  });
+  document.getElementById('studioBgColor').addEventListener('input', (e) => {
+    if(!studioCanvas) return;
+    studioCanvas.backgroundColor = e.target.value;
+    studioCanvas.renderAll();
+  });
+  document.getElementById('studioAccentColor').addEventListener('input', (e) => {
+    if(!studioCanvas) return;
+    studioCanvas.getObjects().filter(o => o.type === 'rect').forEach(r => r.set('fill', e.target.value));
+    studioCanvas.renderAll();
+  });
+
+  document.getElementById('studioDeleteBtn').addEventListener('click', () => {
+    if(!studioCanvas) return;
+    const obj = studioCanvas.getActiveObject();
+    if(obj){
+      studioCanvas.remove(obj);
+      studioCanvas.discardActiveObject();
+      studioCanvas.renderAll();
+    }
+  });
+  document.addEventListener('keydown', (e) => {
+    if(!studioCanvas || viewStudio.classList.contains('hidden')) return;
+    const active = document.activeElement;
+    const isTyping = active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA');
+    if((e.key === 'Delete' || e.key === 'Backspace') && !isTyping){
+      const obj = studioCanvas.getActiveObject();
+      if(obj && !obj.isEditing){
+        studioCanvas.remove(obj);
+        studioCanvas.renderAll();
+      }
+    }
+  });
+
+  document.getElementById('studioClearBtn').addEventListener('click', () => {
+    if(!studioCanvas) return;
+    clearStudioObjects();
+    studioCanvas.renderAll();
+  });
+
+  document.getElementById('studioDownloadBtn').addEventListener('click', () => {
+    if(!studioCanvas || studioCanvas.getObjects().length === 0){
+      setStudioStatus("다운로드할 디자인이 없습니다.", "err");
+      return;
+    }
+    studioCanvas.discardActiveObject();
+    studioCanvas.renderAll();
+    const dataUrl = studioCanvas.toDataURL({ format: 'png', multiplier: 2 });
+    const a = document.createElement('a');
+    a.href = dataUrl;
+    a.download = (document.getElementById('studioProductName').value.trim() || "design") + ".png";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+  });
+
+  document.getElementById('studioSaveBtn').addEventListener('click', () => {
+    if(!studioCanvas || studioCanvas.getObjects().length === 0){
+      setStudioStatus("저장할 디자인이 없습니다. 먼저 요소를 추가해주세요.", "err");
+      return;
+    }
+    studioCanvas.discardActiveObject();
+    studioCanvas.renderAll();
+    const json = studioCanvas.toJSON();
+    const thumb = studioCanvas.toDataURL({ format: 'png', multiplier: 0.3 });
+    const name = document.getElementById('studioProductName').value.trim() || "제목 없음";
+    const designs = loadStudioDesigns();
+    designs.unshift({ name, json, thumb, bgColor: studioCanvas.backgroundColor, savedAt: new Date().toISOString() });
+    const ok = saveStudioDesigns(designs.slice(0, 15));
+    if(!ok){
+      setStudioStatus("저장 공간이 부족합니다. 오래된 디자인을 삭제한 뒤 다시 시도해주세요.", "err");
+      return;
+    }
+    renderStudioDesignList();
+    setStudioStatus("디자인을 저장했습니다.", "ok");
+  });
+
+  function renderStudioDesignList(){
+    const list = document.getElementById('studioDesignList');
+    const designs = loadStudioDesigns();
+    list.innerHTML = "";
+    if(designs.length === 0){
+      const empty = document.createElement('div');
+      empty.className = "empty-note";
+      empty.textContent = "아직 저장된 디자인이 없습니다.";
+      list.appendChild(empty);
+      return;
+    }
+    designs.forEach((item, idx) => {
+      const row = document.createElement('div');
+      row.className = "studio-design-item";
+
+      const img = document.createElement('img');
+      img.src = item.thumb;
+
+      const meta = document.createElement('div');
+      meta.className = "meta";
+      const t = document.createElement('div');
+      t.className = "t";
+      t.textContent = item.name;
+      meta.appendChild(t);
+
+      const del = document.createElement('div');
+      del.className = "del";
+      del.textContent = "✕";
+      del.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const d = loadStudioDesigns();
+        d.splice(idx, 1);
+        saveStudioDesigns(d);
+        renderStudioDesignList();
+      });
+
+      row.addEventListener('click', () => {
+        initStudioCanvas();
+        studioCanvas.loadFromJSON(item.json, () => {
+          if(item.bgColor) studioCanvas.backgroundColor = item.bgColor;
+          studioCanvas.renderAll();
+          if(/^#[0-9A-Fa-f]{6}$/i.test(studioCanvas.backgroundColor)){
+            document.getElementById('studioBgColor').value = studioCanvas.backgroundColor;
+          }
+        });
+        setStudioStatus("불러왔습니다: " + item.name, "ok");
       });
 
       row.appendChild(img);
