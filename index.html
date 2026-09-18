@@ -122,6 +122,14 @@
   }
   textarea{resize:vertical;min-height:64px;line-height:1.5;}
   input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent-dim);}
+  input[type=color]{
+    width:56px;height:38px;padding:3px;border-radius:7px;background:var(--surface-2);
+    border:1px solid var(--border);cursor:pointer;
+  }
+  input[type=file]{
+    width:100%;background:var(--surface-2);border:1px solid var(--border);color:var(--text-dim);
+    padding:8px;border-radius:7px;font-size:12.5px;font-family:var(--font-ui);
+  }
   .row2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
 
   .btn-primary{
@@ -311,6 +319,11 @@
         <div class="glyph">🎨</div>
         <h3>Figma 템플릿 갤러리</h3>
         <p>내 Figma 파일의 디자인 프레임을 이미지로 불러와서 모아봅니다 (읽기 전용).</p>
+      </div>
+      <div class="tool-card" id="card-banner">
+        <div class="glyph">🪧</div>
+        <h3>AI 배너 디자이너</h3>
+        <p>브랜드 무드·컬러·문구를 고르면 AI가 상세페이지용 프로모션 배너 이미지를 만들어줍니다.</p>
       </div>
     </div>
   </section>
@@ -785,6 +798,111 @@
     </div>
   </section>
 
+  <!-- ================= 툴: AI 배너 디자이너 ================= -->
+  <section id="view-banner" class="hidden">
+    <div class="back-link" id="backFromBanner">← 대시보드로</div>
+
+    <div class="tool-layout">
+      <!-- 입력 패널 -->
+      <div class="panel">
+        <h2>배너 정보 입력</h2>
+
+        <div class="field">
+          <label>사용할 AI 모델</label>
+          <select id="bannerProviderSelect">
+            <option value="openai">OpenAI (이미지 생성)</option>
+            <option value="grok">xAI Grok (이미지 생성)</option>
+            <option value="gemini">Google Gemini (이미지 생성)</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>모델명 <span style="color:var(--text-faint)">(필요 시 직접 수정)</span></label>
+          <input type="text" id="bannerModelNameInput" value="gpt-image-1">
+        </div>
+
+        <div class="field">
+          <label>상품명 / 소재</label>
+          <input type="text" id="bannerProductName" placeholder="예: 제주 감귤 3kg">
+        </div>
+
+        <div class="row2">
+          <div class="field">
+            <label>브랜드 무드</label>
+            <select id="bannerStyleSelect">
+              <option value="minimal">미니멀 화이트 배경</option>
+              <option value="premium">프리미엄 다크무드</option>
+              <option value="colorful">컬러풀 팝세일</option>
+              <option value="natural">내추럴 우드톤</option>
+              <option value="custom">직접 입력</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>이미지 비율</label>
+            <select id="bannerRatioSelect">
+              <option value="square">정사각형 (1:1)</option>
+              <option value="landscape">가로형 (4:3)</option>
+              <option value="wide">와이드 (16:9)</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="field hidden" id="bannerCustomStyleField">
+          <label>브랜드 무드 직접 입력</label>
+          <input type="text" id="bannerCustomStyleInput" placeholder="예: 빈티지 필름 느낌, 파스텔톤">
+        </div>
+
+        <div class="row2">
+          <div class="field">
+            <label>메인 컬러</label>
+            <input type="color" id="bannerMainColor" value="#E0A458">
+          </div>
+          <div class="field">
+            <div class="checkbox-row" style="margin-bottom:8px;">
+              <input type="checkbox" id="bannerUseSubColor">
+              <label for="bannerUseSubColor">보조 컬러 사용</label>
+            </div>
+            <input type="color" id="bannerSubColor" value="#222731" disabled>
+          </div>
+        </div>
+
+        <div class="field">
+          <label>헤드카피 문구 <span style="color:var(--text-faint)">(선택)</span></label>
+          <input type="text" id="bannerHeadline" placeholder="예: SPECIAL EVENT">
+        </div>
+        <div class="field">
+          <label>서브 문구 <span style="color:var(--text-faint)">(선택)</span></label>
+          <input type="text" id="bannerSubCopy" placeholder="예: 지금 주문하면 오늘 출발">
+        </div>
+        <div class="warn-note">AI 이미지 생성 모델은 한글 텍스트를 정확히 그려내지 못하는 경우가 많습니다. 문구는 생성 후 별도 편집 툴로 얹는 걸 권장해요.</div>
+
+        <div class="field">
+          <label>상품 사진 업로드 <span style="color:var(--text-faint)">(선택, OpenAI·Gemini만 참고 가능)</span></label>
+          <input type="file" id="bannerProductImageInput" accept="image/*">
+          <div id="bannerImagePreview" style="margin-top:8px;"></div>
+          <div class="hint">Grok은 사진 참고를 지원하지 않아 텍스트 설명만으로 생성돼요.</div>
+        </div>
+
+        <button class="btn-primary" id="generateBannerBtn">배너 생성</button>
+        <div class="status-line" id="bannerStatusLine"></div>
+      </div>
+
+      <!-- 결과 패널 -->
+      <div class="panel">
+        <h2>생성 결과</h2>
+        <div class="image-box" id="bannerImageBox">
+          <div class="placeholder">생성 버튼을 누르면 여기에 이미지가 표시됩니다.</div>
+        </div>
+        <div class="output-actions">
+          <button class="btn-ghost" id="downloadBannerBtn">다운로드</button>
+          <button class="btn-ghost" id="saveBannerBtn">저장</button>
+        </div>
+
+        <h2 style="margin-top:24px;">저장된 기록</h2>
+        <div class="history-list" id="bannerHistoryList"></div>
+      </div>
+    </div>
+  </section>
+
 </main>
 
 <!-- ================= 설정 모달 ================= -->
@@ -868,6 +986,7 @@
   const LS_CS_SETTINGS = "toolbox_cs_settings";
   const LS_CS_HISTORY = "toolbox_cs_history";
   const LS_FIGMA_FILES = "toolbox_figma_files";
+  const LS_BANNER_HISTORY = "toolbox_banner_history";
 
   function loadKeys(){
     try{ return JSON.parse(localStorage.getItem(LS_KEYS)) || {}; }catch(e){ return {}; }
@@ -916,6 +1035,18 @@
   }
   function saveFigmaFiles(f){ localStorage.setItem(LS_FIGMA_FILES, JSON.stringify(f)); }
 
+  function loadBannerHistory(){
+    try{ return JSON.parse(localStorage.getItem(LS_BANNER_HISTORY)) || []; }catch(e){ return []; }
+  }
+  function saveBannerHistory(h){
+    try{
+      localStorage.setItem(LS_BANNER_HISTORY, JSON.stringify(h));
+      return true;
+    }catch(e){
+      return false;
+    }
+  }
+
   // ---------------- 테마(다크/라이트) ----------------
   const LS_THEME = "toolbox_theme";
   const themeToggleBtn = document.getElementById('themeToggleBtn');
@@ -947,6 +1078,7 @@
   const viewCS = document.getElementById('view-cs');
   const viewAdmin = document.getElementById('view-admin');
   const viewFigma = document.getElementById('view-figma');
+  const viewBanner = document.getElementById('view-banner');
 
   function hideAllViews(){
     viewDashboard.classList.add('hidden');
@@ -957,6 +1089,7 @@
     viewCS.classList.add('hidden');
     viewAdmin.classList.add('hidden');
     viewFigma.classList.add('hidden');
+    viewBanner.classList.add('hidden');
   }
   function showDashboard(){
     hideAllViews();
@@ -1001,6 +1134,11 @@
     viewFigma.classList.remove('hidden');
     renderFigmaSavedFiles();
   }
+  function showBanner(){
+    hideAllViews();
+    viewBanner.classList.remove('hidden');
+    renderBannerHistory();
+  }
 
   document.getElementById('card-detailpage').addEventListener('click', showDetailpage);
   document.getElementById('card-thumbnail').addEventListener('click', showThumbnail);
@@ -1009,6 +1147,7 @@
   document.getElementById('card-cs').addEventListener('click', showCS);
   document.getElementById('card-admin').addEventListener('click', showAdmin);
   document.getElementById('card-figma').addEventListener('click', showFigma);
+  document.getElementById('card-banner').addEventListener('click', showBanner);
   document.getElementById('backFromDetail').addEventListener('click', showDashboard);
   document.getElementById('backFromThumbnail').addEventListener('click', showDashboard);
   document.getElementById('backFromFormats').addEventListener('click', showDashboard);
@@ -1016,6 +1155,7 @@
   document.getElementById('backFromCS').addEventListener('click', showDashboard);
   document.getElementById('backFromAdmin').addEventListener('click', showDashboard);
   document.getElementById('backFromFigma').addEventListener('click', showDashboard);
+  document.getElementById('backFromBanner').addEventListener('click', showDashboard);
   document.getElementById('logoHome').addEventListener('click', showDashboard);
 
   // ---------------- 설정 모달 ----------------
@@ -1067,6 +1207,7 @@
       marginHistory: loadMarginHistory(),
       csHistory: loadCSHistory(),
       csSettings: loadCSSettings(),
+      bannerHistory: loadBannerHistory(),
     };
     if(includeKeys) payload.apiKeys = loadKeys();
 
@@ -1121,6 +1262,7 @@
       const importedFormats = Array.isArray(data.detailFormats) ? data.detailFormats : [];
       const importedMargin = Array.isArray(data.marginHistory) ? data.marginHistory : [];
       const importedCSHistory = Array.isArray(data.csHistory) ? data.csHistory : [];
+      const importedBanner = Array.isArray(data.bannerHistory) ? data.bannerHistory : [];
 
       const mergedDetail = mergeHistory(loadHistory(), importedDetail, 100);
       saveHistory(mergedDetail);
@@ -1133,6 +1275,9 @@
 
       const mergedCSHistory = mergeHistory(loadCSHistory(), importedCSHistory, 100);
       saveCSHistory(mergedCSHistory);
+
+      const mergedBanner = mergeHistory(loadBannerHistory(), importedBanner, 30);
+      const bannerOk = saveBannerHistory(mergedBanner);
 
       if(data.csSettings && typeof data.csSettings === 'object' && Object.keys(data.csSettings).length > 0){
         const existingCS = loadCSSettings();
@@ -1163,11 +1308,11 @@
       renderHistory();
       renderThumbHistory();
 
-      if(!thumbOk){
-        setBackupStatus("상세페이지 기록은 가져왔지만, 썸네일 기록은 저장 공간 부족으로 일부만 반영됐을 수 있습니다.", "err");
+      if(!thumbOk || !bannerOk){
+        setBackupStatus("대부분 가져왔지만, 이미지 기록(썸네일/배너) 일부는 저장 공간 부족으로 반영되지 않았을 수 있습니다.", "err");
       }else{
         setBackupStatus(
-          `가져오기 완료 (상세페이지 ${importedDetail.length}건, 썸네일 ${importedThumb.length}건, 포맷 ${importedFormats.length}건, 마진계산 ${importedMargin.length}건, CS답변 ${importedCSHistory.length}건 확인${keysApplied ? ", API 키 적용" : ""})`,
+          `가져오기 완료 (상세페이지 ${importedDetail.length}건, 썸네일 ${importedThumb.length}건, 포맷 ${importedFormats.length}건, 마진계산 ${importedMargin.length}건, CS답변 ${importedCSHistory.length}건, 배너 ${importedBanner.length}건 확인${keysApplied ? ", API 키 적용" : ""})`,
           "ok"
         );
       }
@@ -1962,7 +2107,7 @@ ${categoryRules[category]}`;
   }
 
   // ---------------- 관리자 페이지 ----------------
-  const ADMIN_STORAGE_KEYS = [LS_KEYS, LS_HISTORY, LS_THUMB_HISTORY, LS_FORMATS, LS_MARGIN_HISTORY, LS_CS_SETTINGS, LS_CS_HISTORY, LS_FIGMA_FILES];
+  const ADMIN_STORAGE_KEYS = [LS_KEYS, LS_HISTORY, LS_THUMB_HISTORY, LS_FORMATS, LS_MARGIN_HISTORY, LS_CS_SETTINGS, LS_CS_HISTORY, LS_FIGMA_FILES, LS_BANNER_HISTORY];
   const ASSUMED_QUOTA_BYTES = 5 * 1024 * 1024; // 브라우저마다 다르지만 보통 5MB 안팎
 
   function estimateStorageBytes(){
@@ -1982,6 +2127,7 @@ ${categoryRules[category]}`;
       { label: "마진 계산 기록", num: loadMarginHistory().length },
       { label: "CS 답변 기록", num: loadCSHistory().length },
       { label: "Figma 연결 파일", num: loadFigmaFiles().length },
+      { label: "AI 배너 기록", num: loadBannerHistory().length },
     ];
     const grid = document.getElementById('adminStatGrid');
     grid.innerHTML = "";
@@ -2009,6 +2155,7 @@ ${categoryRules[category]}`;
     loadFormats().forEach(i => items.push({ type: "포맷", title: i.name || "(제목 없음)", savedAt: i.savedAt }));
     loadMarginHistory().forEach(i => items.push({ type: "마진계산", title: i.productName || "(제목 없음)", savedAt: i.savedAt }));
     loadCSHistory().forEach(i => items.push({ type: "CS답변", title: i.typeLabel || "(제목 없음)", savedAt: i.savedAt }));
+    loadBannerHistory().forEach(i => items.push({ type: "AI배너", title: i.productName || "(제목 없음)", savedAt: i.savedAt }));
 
     items.sort((a, b) => new Date(b.savedAt || 0) - new Date(a.savedAt || 0));
     const top = items.slice(0, 20);
@@ -2237,6 +2384,254 @@ ${categoryRules[category]}`;
         loadFigmaFile(item.key);
       });
 
+      row.appendChild(meta);
+      row.appendChild(del);
+      list.appendChild(row);
+    });
+  }
+
+  // ---------------- AI 배너 디자이너 ----------------
+  document.getElementById('bannerProviderSelect').addEventListener('change', (e) => {
+    document.getElementById('bannerModelNameInput').value = defaultImgModelNames[e.target.value];
+  });
+  document.getElementById('bannerStyleSelect').addEventListener('change', (e) => {
+    document.getElementById('bannerCustomStyleField').classList.toggle('hidden', e.target.value !== 'custom');
+  });
+  document.getElementById('bannerUseSubColor').addEventListener('change', (e) => {
+    document.getElementById('bannerSubColor').disabled = !e.target.checked;
+  });
+
+  let bannerUploadedImage = null; // { file, base64, mimeType, dataUrl }
+  document.getElementById('bannerProductImageInput').addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    const preview = document.getElementById('bannerImagePreview');
+    if(!file){
+      bannerUploadedImage = null;
+      preview.innerHTML = "";
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      const dataUrl = reader.result;
+      bannerUploadedImage = { file, base64: dataUrl.split(',')[1], mimeType: file.type, dataUrl };
+      preview.innerHTML = "";
+      const img = document.createElement('img');
+      img.src = dataUrl;
+      img.style.maxWidth = "100%";
+      img.style.maxHeight = "120px";
+      img.style.borderRadius = "6px";
+      img.style.display = "block";
+      preview.appendChild(img);
+    };
+    reader.readAsDataURL(file);
+  });
+
+  function buildBannerPrompt(){
+    const productName = document.getElementById('bannerProductName').value.trim();
+    const styleKey = document.getElementById('bannerStyleSelect').value;
+    const styleText = styleKey === 'custom'
+      ? document.getElementById('bannerCustomStyleInput').value.trim()
+      : stylePresetText[styleKey];
+    const mainColor = document.getElementById('bannerMainColor').value;
+    const useSubColor = document.getElementById('bannerUseSubColor').checked;
+    const subColor = document.getElementById('bannerSubColor').value;
+    const headline = document.getElementById('bannerHeadline').value.trim();
+    const subCopy = document.getElementById('bannerSubCopy').value.trim();
+    const ratio = document.getElementById('bannerRatioSelect').value;
+
+    let prompt = `한국 이커머스(쿠팡/네이버쇼핑) 상세페이지용 프로모션 배너 이미지. 상품: ${productName || "미지정 상품"}. 브랜드 무드: ${styleText}. 메인 컬러 톤: ${mainColor}.`;
+    if(useSubColor) prompt += ` 보조 컬러 톤: ${subColor}.`;
+    prompt += " 레이아웃: 상품이 화면 중앙에 크고 선명하게 보이도록 구성하고, 텍스트가 들어갈 여백을 상단이나 하단에 남겨둘 것. 실제 상품 사진처럼 사실적인 렌더링.";
+    if(headline) prompt += ` 이미지 안에 다음 한글 헤드카피 문구를 포함: "${headline}".`;
+    if(subCopy) prompt += ` 서브 문구도 포함: "${subCopy}".`;
+    if(!headline && !subCopy) prompt += " 이미지 안에 텍스트나 글자는 넣지 않음.";
+    if(bannerUploadedImage) prompt += " 첨부된 상품 사진 속 상품의 형태와 색감을 최대한 유지하면서, 배경과 구성만 위 컨셉에 맞게 새로 디자인해줘.";
+
+    return { prompt, productName, ratio, styleKey };
+  }
+
+  async function callOpenAIImageEdit(apiKey, model, prompt, imageFile, ratio){
+    const form = new FormData();
+    form.append('model', model);
+    form.append('prompt', prompt);
+    form.append('image', imageFile);
+    form.append('size', ratioToOpenAISize[ratio] || "1024x1024");
+    const res = await fetch("https://api.openai.com/v1/images/edits", {
+      method: "POST",
+      headers: { "Authorization": "Bearer " + apiKey },
+      body: form
+    });
+    if(!res.ok){
+      const t = await res.text();
+      throw new Error("OpenAI 이미지 편집 오류 (" + res.status + "): " + t.slice(0,300));
+    }
+    const data = await res.json();
+    const item = data.data[0];
+    if(item.b64_json) return "data:image/png;base64," + item.b64_json;
+    if(item.url) return item.url;
+    throw new Error("OpenAI 응답에서 이미지를 찾지 못했습니다.");
+  }
+
+  async function callGeminiImageWithRef(apiKey, model, prompt, base64Data, mimeType){
+    const url = "https://generativelanguage.googleapis.com/v1beta/models/" + encodeURIComponent(model) + ":generateContent?key=" + encodeURIComponent(apiKey);
+    const res = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        contents: [{ role: "user", parts: [ { text: prompt }, { inlineData: { mimeType: mimeType, data: base64Data } } ] }],
+        generationConfig: { responseModalities: ["TEXT", "IMAGE"] }
+      })
+    });
+    if(!res.ok){
+      const t = await res.text();
+      throw new Error("Gemini 이미지 오류 (" + res.status + "): " + t.slice(0,300));
+    }
+    const data = await res.json();
+    const parts = data.candidates[0].content.parts;
+    const imgPart = parts.find(p => p.inlineData);
+    if(!imgPart) throw new Error("Gemini 응답에서 이미지를 찾지 못했습니다.");
+    return "data:" + imgPart.inlineData.mimeType + ";base64," + imgPart.inlineData.data;
+  }
+
+  const bannerImageBox = document.getElementById('bannerImageBox');
+  const bannerStatusLine = document.getElementById('bannerStatusLine');
+  const generateBannerBtn = document.getElementById('generateBannerBtn');
+  let lastBannerResult = null;
+
+  function setBannerStatus(msg, kind){
+    bannerStatusLine.textContent = msg;
+    bannerStatusLine.className = "status-line" + (kind ? " " + kind : "");
+  }
+
+  generateBannerBtn.addEventListener('click', async () => {
+    const provider = document.getElementById('bannerProviderSelect').value;
+    const modelName = document.getElementById('bannerModelNameInput').value.trim();
+    const keys = loadKeys();
+    const apiKey = keys[provider];
+
+    if(!apiKey){
+      setBannerStatus("먼저 우측 상단 'API 키 설정'에서 " + provider + " 키를 입력해주세요.", "err");
+      return;
+    }
+    const { prompt, productName, ratio, styleKey } = buildBannerPrompt();
+    if(!productName){
+      setBannerStatus("상품명은 최소한 입력해주세요.", "err");
+      return;
+    }
+
+    generateBannerBtn.disabled = true;
+    setBannerStatus("생성 중입니다... (이미지 생성은 시간이 조금 더 걸릴 수 있어요)");
+    bannerImageBox.innerHTML = '<div class="placeholder">생성 중...</div>';
+
+    try{
+      let imgSrc;
+      if(provider === "openai"){
+        imgSrc = bannerUploadedImage
+          ? await callOpenAIImageEdit(apiKey, modelName, prompt, bannerUploadedImage.file, ratio)
+          : await callOpenAIImage(apiKey, modelName, prompt, ratio);
+      }else if(provider === "gemini"){
+        imgSrc = bannerUploadedImage
+          ? await callGeminiImageWithRef(apiKey, modelName, prompt, bannerUploadedImage.base64, bannerUploadedImage.mimeType)
+          : await callGeminiImage(apiKey, modelName, prompt);
+      }else{
+        imgSrc = await callGrokImage(apiKey, modelName, prompt);
+      }
+
+      bannerImageBox.innerHTML = "";
+      const img = document.createElement('img');
+      img.src = imgSrc;
+      bannerImageBox.appendChild(img);
+
+      lastBannerResult = { productName, provider, modelName, styleKey, imgSrc };
+      setBannerStatus("생성 완료.", "ok");
+    }catch(err){
+      setBannerStatus(err.message || String(err), "err");
+      bannerImageBox.innerHTML = '<div class="placeholder">생성에 실패했습니다. 위 오류 메시지를 확인해주세요.</div>';
+    }finally{
+      generateBannerBtn.disabled = false;
+    }
+  });
+
+  document.getElementById('downloadBannerBtn').addEventListener('click', () => {
+    if(!lastBannerResult){
+      setBannerStatus("다운로드할 이미지가 없습니다.", "err");
+      return;
+    }
+    const a = document.createElement('a');
+    a.href = lastBannerResult.imgSrc;
+    a.download = (lastBannerResult.productName || "banner") + ".png";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+  });
+
+  document.getElementById('saveBannerBtn').addEventListener('click', () => {
+    if(!lastBannerResult){
+      setBannerStatus("저장할 생성 결과가 없습니다.", "err");
+      return;
+    }
+    const history = loadBannerHistory();
+    history.unshift({ ...lastBannerResult, savedAt: new Date().toISOString() });
+    const ok = saveBannerHistory(history.slice(0, 30));
+    if(!ok){
+      setBannerStatus("저장 공간이 부족합니다. 오래된 기록을 삭제한 뒤 다시 시도해주세요.", "err");
+      return;
+    }
+    renderBannerHistory();
+    setBannerStatus("저장했습니다.", "ok");
+  });
+
+  function renderBannerHistory(){
+    const list = document.getElementById('bannerHistoryList');
+    const history = loadBannerHistory();
+    list.innerHTML = "";
+    if(history.length === 0){
+      const empty = document.createElement('div');
+      empty.className = "empty-note";
+      empty.textContent = "아직 저장된 기록이 없습니다.";
+      list.appendChild(empty);
+      return;
+    }
+    history.forEach((item, idx) => {
+      const row = document.createElement('div');
+      row.className = "history-item thumb";
+
+      const img = document.createElement('img');
+      img.src = item.imgSrc;
+
+      const meta = document.createElement('div');
+      meta.className = "meta";
+      const t = document.createElement('div');
+      t.className = "t";
+      t.textContent = item.productName || "(제목 없음)";
+      const s = document.createElement('div');
+      s.className = "s";
+      const d = new Date(item.savedAt);
+      s.textContent = (thumbStyleLabel[item.styleKey] || "") + " · " + item.provider + " · " + d.toLocaleString('ko-KR');
+      meta.appendChild(t); meta.appendChild(s);
+
+      const del = document.createElement('div');
+      del.className = "del";
+      del.textContent = "✕";
+      del.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const h = loadBannerHistory();
+        h.splice(idx, 1);
+        saveBannerHistory(h);
+        renderBannerHistory();
+      });
+
+      row.addEventListener('click', () => {
+        bannerImageBox.innerHTML = "";
+        const bigImg = document.createElement('img');
+        bigImg.src = item.imgSrc;
+        bannerImageBox.appendChild(bigImg);
+        lastBannerResult = item;
+        setBannerStatus("불러왔습니다: " + (item.productName || ""), "ok");
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      });
+
+      row.appendChild(img);
       row.appendChild(meta);
       row.appendChild(del);
       list.appendChild(row);
