@@ -152,6 +152,18 @@
     padding:8px 10px;border-radius:6px;line-height:1.6;margin-top:-4px;margin-bottom:14px;
   }
 
+  /* ---------- 마진 계산기 ---------- */
+  .margin-result{
+    background:var(--surface-2);border:1px solid var(--border);border-radius:8px;
+    padding:16px;margin-bottom:14px;
+  }
+  .margin-result h3{margin:0 0 10px;font-size:13px;color:var(--text-dim);font-weight:600;}
+  .margin-result .big{font-size:24px;font-weight:700;font-family:var(--font-mono);}
+  .margin-result .big.ok{color:var(--ok);}
+  .margin-result .big.err{color:var(--danger);}
+  .margin-result .sub{font-size:12px;color:var(--text-faint);margin-top:4px;}
+  .margin-result .err-msg{font-size:12.5px;color:var(--danger);line-height:1.6;}
+
   /* ---------- 설정 모달 ---------- */
   .modal-backdrop{
     position:fixed;inset:0;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;
@@ -207,6 +219,11 @@
         <div class="glyph">F</div>
         <h3>상세페이지 포맷 관리</h3>
         <p>자주 쓰는 상세페이지 섹션 구조를 이름 붙여 저장하고, 생성할 때 골라 쓸 수 있습니다.</p>
+      </div>
+      <div class="tool-card" id="card-margin">
+        <div class="glyph">₩</div>
+        <h3>마진 계산기</h3>
+        <p>원가·수수료·배송비를 입력하면 실제 마진과 추천 판매가를 계산해줍니다.</p>
       </div>
     </div>
   </section>
@@ -444,6 +461,101 @@
     </div>
   </section>
 
+  <!-- ================= 툴: 마진 계산기 ================= -->
+  <section id="view-margin" class="hidden">
+    <div class="back-link" id="backFromMargin">← 대시보드로</div>
+
+    <div class="tool-layout">
+      <!-- 입력 패널 -->
+      <div class="panel">
+        <h2>비용 입력</h2>
+
+        <div class="field">
+          <label>상품명 <span style="color:var(--text-faint)">(선택, 저장할 때 구분용)</span></label>
+          <input type="text" id="marginProductName" placeholder="예: 제주 감귤 3kg">
+        </div>
+
+        <div class="row2">
+          <div class="field">
+            <label>원가 (원)</label>
+            <input type="number" id="marginCost" placeholder="0">
+          </div>
+          <div class="field">
+            <label>부자재·포장비 (원)</label>
+            <input type="number" id="marginPackaging" placeholder="0">
+          </div>
+        </div>
+
+        <div class="row2">
+          <div class="field">
+            <label>배송비 (판매자 부담분, 원)</label>
+            <input type="number" id="marginShipping" placeholder="0">
+          </div>
+          <div class="field">
+            <label>기타 비용 (원)</label>
+            <input type="number" id="marginEtc" placeholder="0">
+          </div>
+        </div>
+
+        <div class="field">
+          <label>플랫폼 수수료율 프리셋</label>
+          <select id="marginFeePreset">
+            <option value="">직접 입력</option>
+            <option value="10.9">쿠팡 (예시 약 10.9%)</option>
+            <option value="5.63">네이버 스마트스토어 (예시 약 5.63%)</option>
+          </select>
+          <div class="hint">실제 수수료율은 카테고리·정산 방식마다 다릅니다. 프리셋은 참고용이니 셀러센터에서 확인 후 아래 값을 직접 수정하세요.</div>
+        </div>
+
+        <div class="row2">
+          <div class="field">
+            <label>플랫폼 수수료율 (%)</label>
+            <input type="number" id="marginFeeRate" placeholder="0" step="0.01">
+          </div>
+          <div class="field">
+            <label>광고비 비율 (%) <span style="color:var(--text-faint)">(선택)</span></label>
+            <input type="number" id="marginAdRate" placeholder="0" step="0.01">
+          </div>
+        </div>
+
+        <div class="field">
+          <label>판매가 (원) <span style="color:var(--text-faint)">(입력하면 실제 마진 계산)</span></label>
+          <input type="number" id="marginPrice" placeholder="예: 15900">
+        </div>
+
+        <div class="field">
+          <label>목표 마진율 (%) <span style="color:var(--text-faint)">(입력하면 추천 판매가 계산)</span></label>
+          <input type="number" id="marginTargetRate" placeholder="예: 30" step="0.1">
+        </div>
+
+        <button class="btn-primary" id="saveMarginBtn">이 계산 저장</button>
+        <div class="status-line" id="marginStatusLine"></div>
+      </div>
+
+      <!-- 결과 패널 -->
+      <div class="panel">
+        <h2>계산 결과</h2>
+
+        <div class="margin-result">
+          <h3>판매가 기준 실제 마진</h3>
+          <div id="marginResultActual">
+            <div class="sub">판매가를 입력하면 계산됩니다.</div>
+          </div>
+        </div>
+
+        <div class="margin-result">
+          <h3>목표 마진율 기준 추천 판매가</h3>
+          <div id="marginResultTarget">
+            <div class="sub">목표 마진율을 입력하면 계산됩니다.</div>
+          </div>
+        </div>
+
+        <h2 style="margin-top:24px;">저장된 계산 기록</h2>
+        <div class="history-list" id="marginHistoryList"></div>
+      </div>
+    </div>
+  </section>
+
 </main>
 
 <!-- ================= 설정 모달 ================= -->
@@ -518,6 +630,7 @@
   const LS_HISTORY = "toolbox_detailpage_history";
   const LS_THUMB_HISTORY = "toolbox_thumbnail_history";
   const LS_FORMATS = "toolbox_detailpage_formats";
+  const LS_MARGIN_HISTORY = "toolbox_margin_history";
 
   function loadKeys(){
     try{ return JSON.parse(localStorage.getItem(LS_KEYS)) || {}; }catch(e){ return {}; }
@@ -546,17 +659,24 @@
   }
   function saveFormats(f){ localStorage.setItem(LS_FORMATS, JSON.stringify(f)); }
 
+  function loadMarginHistory(){
+    try{ return JSON.parse(localStorage.getItem(LS_MARGIN_HISTORY)) || []; }catch(e){ return []; }
+  }
+  function saveMarginHistory(h){ localStorage.setItem(LS_MARGIN_HISTORY, JSON.stringify(h)); }
+
   // ---------------- 화면 전환 ----------------
   const viewDashboard = document.getElementById('view-dashboard');
   const viewDetailpage = document.getElementById('view-detailpage');
   const viewThumbnail = document.getElementById('view-thumbnail');
   const viewFormats = document.getElementById('view-formats');
+  const viewMargin = document.getElementById('view-margin');
 
   function hideAllViews(){
     viewDashboard.classList.add('hidden');
     viewDetailpage.classList.add('hidden');
     viewThumbnail.classList.add('hidden');
     viewFormats.classList.add('hidden');
+    viewMargin.classList.add('hidden');
   }
   function showDashboard(){
     hideAllViews();
@@ -579,13 +699,21 @@
     resetFormatEditor();
     renderFormatList();
   }
+  function showMargin(){
+    hideAllViews();
+    viewMargin.classList.remove('hidden');
+    renderMarginHistory();
+    updateMarginResults();
+  }
 
   document.getElementById('card-detailpage').addEventListener('click', showDetailpage);
   document.getElementById('card-thumbnail').addEventListener('click', showThumbnail);
   document.getElementById('card-formats').addEventListener('click', showFormats);
+  document.getElementById('card-margin').addEventListener('click', showMargin);
   document.getElementById('backFromDetail').addEventListener('click', showDashboard);
   document.getElementById('backFromThumbnail').addEventListener('click', showDashboard);
   document.getElementById('backFromFormats').addEventListener('click', showDashboard);
+  document.getElementById('backFromMargin').addEventListener('click', showDashboard);
   document.getElementById('logoHome').addEventListener('click', showDashboard);
 
   // ---------------- 설정 모달 ----------------
@@ -632,6 +760,7 @@
       detailHistory: loadHistory(),
       thumbHistory: loadThumbHistory(),
       detailFormats: loadFormats(),
+      marginHistory: loadMarginHistory(),
     };
     if(includeKeys) payload.apiKeys = loadKeys();
 
@@ -684,12 +813,16 @@
       const importedDetail = Array.isArray(data.detailHistory) ? data.detailHistory : [];
       const importedThumb = Array.isArray(data.thumbHistory) ? data.thumbHistory : [];
       const importedFormats = Array.isArray(data.detailFormats) ? data.detailFormats : [];
+      const importedMargin = Array.isArray(data.marginHistory) ? data.marginHistory : [];
 
       const mergedDetail = mergeHistory(loadHistory(), importedDetail, 100);
       saveHistory(mergedDetail);
 
       const mergedThumb = mergeHistory(loadThumbHistory(), importedThumb, 30);
       const thumbOk = saveThumbHistory(mergedThumb);
+
+      const mergedMargin = mergeHistory(loadMarginHistory(), importedMargin, 50);
+      saveMarginHistory(mergedMargin);
 
       if(importedFormats.length > 0){
         const existingFormats = loadFormats();
@@ -718,7 +851,7 @@
         setBackupStatus("상세페이지 기록은 가져왔지만, 썸네일 기록은 저장 공간 부족으로 일부만 반영됐을 수 있습니다.", "err");
       }else{
         setBackupStatus(
-          `가져오기 완료 (상세페이지 ${importedDetail.length}건, 썸네일 ${importedThumb.length}건, 포맷 ${importedFormats.length}건 확인${keysApplied ? ", API 키 적용" : ""})`,
+          `가져오기 완료 (상세페이지 ${importedDetail.length}건, 썸네일 ${importedThumb.length}건, 포맷 ${importedFormats.length}건, 마진계산 ${importedMargin.length}건 확인${keysApplied ? ", API 키 적용" : ""})`,
           "ok"
         );
       }
@@ -1156,6 +1289,175 @@ ${categoryRules[category]}`;
   }
 
   populateFormatSelect();
+
+  // ---------------- 마진 계산기 ----------------
+  const marginStatusLine = document.getElementById('marginStatusLine');
+
+  function setMarginStatus(msg, kind){
+    marginStatusLine.textContent = msg;
+    marginStatusLine.className = "status-line" + (kind ? " " + kind : "");
+  }
+
+  function numVal(id){
+    const v = parseFloat(document.getElementById(id).value);
+    return isNaN(v) ? 0 : v;
+  }
+
+  const fmtWon = (n) => Math.round(n).toLocaleString('ko-KR') + "원";
+  const fmtPct = (n) => n.toFixed(1) + "%";
+
+  document.getElementById('marginFeePreset').addEventListener('change', (e) => {
+    if(e.target.value) document.getElementById('marginFeeRate').value = e.target.value;
+    updateMarginResults();
+  });
+
+  function computeMargin(){
+    const cost = numVal('marginCost');
+    const packaging = numVal('marginPackaging');
+    const shipping = numVal('marginShipping');
+    const etc = numVal('marginEtc');
+    const feeRate = numVal('marginFeeRate');
+    const adRate = numVal('marginAdRate');
+    const price = numVal('marginPrice');
+    const targetRate = numVal('marginTargetRate');
+
+    const fixedCostTotal = cost + packaging + shipping + etc;
+    const percentRate = feeRate + adRate;
+
+    let actual = null;
+    const priceEntered = document.getElementById('marginPrice').value.trim() !== "";
+    if(priceEntered && price > 0){
+      const feeAmount = price * percentRate / 100;
+      const marginAmount = price - fixedCostTotal - feeAmount;
+      const marginRate = marginAmount / price * 100;
+      actual = { price, feeAmount, marginAmount, marginRate };
+    }
+
+    let target = null;
+    const targetEntered = document.getElementById('marginTargetRate').value.trim() !== "";
+    if(targetEntered){
+      const denom = 1 - percentRate / 100 - targetRate / 100;
+      if(denom <= 0){
+        target = { error: "수수료율 + 광고비율 + 목표 마진율의 합이 100% 이상이라 계산할 수 없습니다. 값을 낮춰주세요." };
+      }else{
+        const recommendedPrice = fixedCostTotal / denom;
+        target = { recommendedPrice, targetRate };
+      }
+    }
+
+    return { cost, packaging, shipping, etc, feeRate, adRate, fixedCostTotal, percentRate, price, targetRate, actual, target };
+  }
+
+  function updateMarginResults(){
+    const r = computeMargin();
+    const actualBox = document.getElementById('marginResultActual');
+    const targetBox = document.getElementById('marginResultTarget');
+
+    if(!r.actual){
+      actualBox.innerHTML = '<div class="sub">판매가를 입력하면 계산됩니다.</div>';
+    }else{
+      const kind = r.actual.marginAmount >= 0 ? "ok" : "err";
+      actualBox.innerHTML = `
+        <div class="big ${kind}">${fmtWon(r.actual.marginAmount)} <span style="font-size:14px;">(마진율 ${fmtPct(r.actual.marginRate)})</span></div>
+        <div class="sub">판매가 ${fmtWon(r.actual.price)} − 고정비 ${fmtWon(r.fixedCostTotal)} − 수수료·광고비 ${fmtWon(r.actual.feeAmount)}</div>
+      `;
+    }
+
+    if(!r.target){
+      targetBox.innerHTML = '<div class="sub">목표 마진율을 입력하면 계산됩니다.</div>';
+    }else if(r.target.error){
+      targetBox.innerHTML = `<div class="err-msg">${r.target.error}</div>`;
+    }else{
+      targetBox.innerHTML = `
+        <div class="big ok">${fmtWon(r.target.recommendedPrice)}</div>
+        <div class="sub">고정비 ${fmtWon(r.fixedCostTotal)} 기준, 목표 마진율 ${fmtPct(r.target.targetRate)}을 달성하는 판매가</div>
+      `;
+    }
+  }
+
+  ['marginCost','marginPackaging','marginShipping','marginEtc','marginFeeRate','marginAdRate','marginPrice','marginTargetRate']
+    .forEach(id => document.getElementById(id).addEventListener('input', updateMarginResults));
+
+  document.getElementById('saveMarginBtn').addEventListener('click', () => {
+    const r = computeMargin();
+    if(!r.actual && !r.target){
+      setMarginStatus("판매가 또는 목표 마진율 중 하나는 입력해야 저장할 수 있습니다.", "err");
+      return;
+    }
+    const history = loadMarginHistory();
+    history.unshift({
+      productName: document.getElementById('marginProductName').value.trim(),
+      cost: r.cost, packaging: r.packaging, shipping: r.shipping, etc: r.etc,
+      feeRate: r.feeRate, adRate: r.adRate,
+      price: r.price, targetRate: r.targetRate,
+      actual: r.actual, target: r.target,
+      savedAt: new Date().toISOString(),
+    });
+    saveMarginHistory(history.slice(0, 50));
+    renderMarginHistory();
+    setMarginStatus("저장했습니다.", "ok");
+  });
+
+  function renderMarginHistory(){
+    const list = document.getElementById('marginHistoryList');
+    const history = loadMarginHistory();
+    list.innerHTML = "";
+    if(history.length === 0){
+      const empty = document.createElement('div');
+      empty.className = "empty-note";
+      empty.textContent = "아직 저장된 계산 기록이 없습니다.";
+      list.appendChild(empty);
+      return;
+    }
+    history.forEach((item, idx) => {
+      const row = document.createElement('div');
+      row.className = "history-item";
+
+      const meta = document.createElement('div');
+      meta.className = "meta";
+      const t = document.createElement('div');
+      t.className = "t";
+      t.textContent = item.productName || "(제목 없음)";
+      const s = document.createElement('div');
+      s.className = "s";
+      const d = new Date(item.savedAt);
+      const parts = [];
+      if(item.actual) parts.push("마진율 " + fmtPct(item.actual.marginRate));
+      if(item.target && !item.target.error) parts.push("추천가 " + fmtWon(item.target.recommendedPrice));
+      s.textContent = parts.join(" · ") + " · " + d.toLocaleString('ko-KR');
+      meta.appendChild(t); meta.appendChild(s);
+
+      const del = document.createElement('div');
+      del.className = "del";
+      del.textContent = "✕";
+      del.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const h = loadMarginHistory();
+        h.splice(idx, 1);
+        saveMarginHistory(h);
+        renderMarginHistory();
+      });
+
+      row.addEventListener('click', () => {
+        document.getElementById('marginProductName').value = item.productName || "";
+        document.getElementById('marginCost').value = item.cost || "";
+        document.getElementById('marginPackaging').value = item.packaging || "";
+        document.getElementById('marginShipping').value = item.shipping || "";
+        document.getElementById('marginEtc').value = item.etc || "";
+        document.getElementById('marginFeeRate').value = item.feeRate || "";
+        document.getElementById('marginAdRate').value = item.adRate || "";
+        document.getElementById('marginPrice').value = item.price || "";
+        document.getElementById('marginTargetRate').value = item.targetRate || "";
+        updateMarginResults();
+        setMarginStatus("불러왔습니다: " + (item.productName || ""), "ok");
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      });
+
+      row.appendChild(meta);
+      row.appendChild(del);
+      list.appendChild(row);
+    });
+  }
 
   // ================= 썸네일 생성기 =================
 
