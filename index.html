@@ -179,6 +179,7 @@
     <span class="name">부업 툴박스</span>
   </div>
   <nav>
+    <button class="icon-btn" id="openBackup">데이터 백업</button>
     <button class="icon-btn" id="openSettings">API 키 설정</button>
   </nav>
 </header>
@@ -430,6 +431,38 @@
   </div>
 </div>
 
+<!-- ================= 데이터 백업/복원 모달 ================= -->
+<div class="modal-backdrop hidden" id="backupModal">
+  <div class="modal">
+    <h2>데이터 백업 / 복원</h2>
+    <p class="sub">저장된 상세페이지·썸네일 기록을 JSON 파일로 내보내거나, 이전에 내보낸 파일을 다시 불러올 수 있습니다.</p>
+
+    <h2 style="font-size:13.5px;margin-top:22px;">내보내기</h2>
+    <div class="checkbox-row">
+      <input type="checkbox" id="exportIncludeKeys">
+      <label for="exportIncludeKeys">API 키도 함께 내보내기 (다른 사람과 파일을 공유하지 않을 때만 체크)</label>
+    </div>
+    <button class="btn-primary" id="exportDataBtn">JSON 파일로 내보내기</button>
+
+    <h2 style="font-size:13.5px;margin-top:26px;">가져오기</h2>
+    <div class="field">
+      <label>백업 JSON 파일 선택</label>
+      <input type="file" id="importFileInput" accept="application/json">
+    </div>
+    <div class="checkbox-row">
+      <input type="checkbox" id="importIncludeKeys">
+      <label for="importIncludeKeys">파일에 API 키가 있으면 함께 가져오기</label>
+    </div>
+    <button class="btn-primary" id="importDataBtn">가져온 파일 적용하기</button>
+    <div class="hint">가져오기는 기존 기록을 지우지 않고 뒤에 추가합니다 (중복 항목은 자동으로 걸러집니다).</div>
+    <div class="status-line" id="backupStatusLine"></div>
+
+    <div class="modal-foot">
+      <button class="btn-ghost" id="closeBackup">닫기</button>
+    </div>
+  </div>
+</div>
+
 <script>
 (function(){
   "use strict";
@@ -507,6 +540,116 @@
       grok: document.getElementById('key-grok').value.trim(),
     });
     settingsModal.classList.add('hidden');
+  });
+
+  // ---------------- 데이터 백업/복원 모달 ----------------
+  const backupModal = document.getElementById('backupModal');
+  const backupStatusLine = document.getElementById('backupStatusLine');
+
+  function setBackupStatus(msg, kind){
+    backupStatusLine.textContent = msg;
+    backupStatusLine.className = "status-line" + (kind ? " " + kind : "");
+  }
+
+  document.getElementById('openBackup').addEventListener('click', () => {
+    setBackupStatus("");
+    document.getElementById('importFileInput').value = "";
+    backupModal.classList.remove('hidden');
+  });
+  document.getElementById('closeBackup').addEventListener('click', () => backupModal.classList.add('hidden'));
+
+  document.getElementById('exportDataBtn').addEventListener('click', () => {
+    const includeKeys = document.getElementById('exportIncludeKeys').checked;
+    const payload = {
+      app: "shopping-toolbox",
+      version: 1,
+      exportedAt: new Date().toISOString(),
+      detailHistory: loadHistory(),
+      thumbHistory: loadThumbHistory(),
+    };
+    if(includeKeys) payload.apiKeys = loadKeys();
+
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const dateStr = new Date().toISOString().slice(0, 10);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `부업툴박스_백업_${dateStr}.json`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+    setBackupStatus("내보내기 완료. 다운로드 폴더를 확인해주세요.", "ok");
+  });
+
+  // 기존 기록 + 가져온 기록을 합치되, 내용이 완전히 같은 항목은 걸러냄
+  function mergeHistory(existing, imported, maxLen){
+    const seen = new Set(existing.map(item => JSON.stringify(item)));
+    const merged = existing.slice();
+    imported.forEach(item => {
+      const key = JSON.stringify(item);
+      if(!seen.has(key)){
+        seen.add(key);
+        merged.push(item);
+      }
+    });
+    merged.sort((a, b) => new Date(b.savedAt || 0) - new Date(a.savedAt || 0));
+    return merged.slice(0, maxLen);
+  }
+
+  document.getElementById('importDataBtn').addEventListener('click', () => {
+    const fileInput = document.getElementById('importFileInput');
+    const file = fileInput.files[0];
+    if(!file){
+      setBackupStatus("가져올 JSON 파일을 먼저 선택해주세요.", "err");
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      let data;
+      try{
+        data = JSON.parse(reader.result);
+      }catch(e){
+        setBackupStatus("파일을 읽을 수 없습니다. 이 앱에서 내보낸 JSON 파일이 맞는지 확인해주세요.", "err");
+        return;
+      }
+
+      const importedDetail = Array.isArray(data.detailHistory) ? data.detailHistory : [];
+      const importedThumb = Array.isArray(data.thumbHistory) ? data.thumbHistory : [];
+
+      const mergedDetail = mergeHistory(loadHistory(), importedDetail, 100);
+      saveHistory(mergedDetail);
+
+      const mergedThumb = mergeHistory(loadThumbHistory(), importedThumb, 30);
+      const thumbOk = saveThumbHistory(mergedThumb);
+
+      let keysApplied = false;
+      const importIncludeKeys = document.getElementById('importIncludeKeys').checked;
+      if(importIncludeKeys && data.apiKeys && typeof data.apiKeys === 'object'){
+        const current = loadKeys();
+        const next = { ...current };
+        ['openai', 'gemini', 'grok'].forEach(p => {
+          if(data.apiKeys[p]) next[p] = data.apiKeys[p];
+        });
+        saveKeys(next);
+        keysApplied = true;
+      }
+
+      renderHistory();
+      renderThumbHistory();
+
+      if(!thumbOk){
+        setBackupStatus("상세페이지 기록은 가져왔지만, 썸네일 기록은 저장 공간 부족으로 일부만 반영됐을 수 있습니다.", "err");
+      }else{
+        setBackupStatus(
+          `가져오기 완료 (상세페이지 ${importedDetail.length}건, 썸네일 ${importedThumb.length}건 확인${keysApplied ? ", API 키 적용" : ""})`,
+          "ok"
+        );
+      }
+    };
+    reader.onerror = () => setBackupStatus("파일을 읽는 중 오류가 발생했습니다.", "err");
+    reader.readAsText(file);
   });
 
   // 모델 선택 바뀌면 기본 모델명 자동 세팅
