@@ -1,0 +1,1058 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>부업 툴박스</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #12151A;
+    --surface: #1B1F26;
+    --surface-2: #222731;
+    --border: #2A2F38;
+    --text: #EDEFF2;
+    --text-dim: #9AA3AF;
+    --text-faint: #5F6672;
+    --accent: #E0A458;
+    --accent-dim: #8A6A3E;
+    --ok: #6FA97A;
+    --danger: #C96257;
+    --radius: 10px;
+    --font-ui: 'Noto Sans KR', -apple-system, sans-serif;
+    --font-mono: 'JetBrains Mono', monospace;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:var(--font-ui);}
+  ::selection{background:var(--accent-dim);color:#fff;}
+
+  /* ---------- 헤더 ---------- */
+  header{
+    display:flex;align-items:center;justify-content:space-between;
+    padding:18px 28px;border-bottom:1px solid var(--border);
+    position:sticky;top:0;background:rgba(18,21,26,.92);backdrop-filter:blur(6px);z-index:20;
+  }
+  .brand{display:flex;align-items:baseline;gap:10px;cursor:pointer;}
+  .brand .mark{font-family:var(--font-mono);color:var(--accent);font-size:13px;letter-spacing:.02em;}
+  .brand .name{font-weight:700;font-size:17px;}
+  header nav{display:flex;gap:8px;}
+  .icon-btn{
+    background:var(--surface);border:1px solid var(--border);color:var(--text-dim);
+    padding:8px 14px;border-radius:8px;font-size:13px;cursor:pointer;font-family:var(--font-ui);
+    transition:border-color .15s,color .15s;
+  }
+  .icon-btn:hover{border-color:var(--accent-dim);color:var(--text);}
+
+  main{max-width:1040px;margin:0 auto;padding:36px 24px 80px;}
+
+  /* ---------- 대시보드 ---------- */
+  .dash-head{margin-bottom:28px;}
+  .dash-head h1{font-size:22px;margin:0 0 6px;font-weight:700;}
+  .dash-head p{color:var(--text-dim);font-size:14px;margin:0;}
+  .tool-grid{
+    display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px;
+  }
+  .tool-card{
+    background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
+    padding:20px;cursor:pointer;transition:border-color .15s,transform .15s;position:relative;
+  }
+  .tool-card:hover{border-color:var(--accent-dim);transform:translateY(-2px);}
+  .tool-card.disabled{opacity:.45;cursor:default;}
+  .tool-card.disabled:hover{transform:none;border-color:var(--border);}
+  .tool-card .glyph{
+    width:36px;height:36px;border-radius:8px;background:var(--surface-2);
+    display:flex;align-items:center;justify-content:center;font-size:17px;margin-bottom:14px;color:var(--accent);
+  }
+  .tool-card h3{font-size:15px;margin:0 0 6px;font-weight:600;}
+  .tool-card p{font-size:12.5px;color:var(--text-dim);margin:0;line-height:1.5;}
+  .badge-soon{
+    position:absolute;top:16px;right:16px;font-family:var(--font-mono);font-size:10px;
+    color:var(--text-faint);border:1px solid var(--border);padding:2px 7px;border-radius:20px;
+  }
+
+  /* ---------- 공통 유틸 ---------- */
+  .hidden{display:none !important;}
+  .back-link{
+    color:var(--text-dim);font-size:13px;cursor:pointer;display:inline-flex;align-items:center;gap:6px;
+    margin-bottom:20px;
+  }
+  .back-link:hover{color:var(--text);}
+
+  /* ---------- 툴 화면 레이아웃 ---------- */
+  .tool-layout{display:grid;grid-template-columns:1.1fr 1fr;gap:24px;align-items:flex-start;}
+  @media(max-width:860px){.tool-layout{grid-template-columns:1fr;}}
+  .panel{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:22px;}
+  .panel h2{font-size:15px;margin:0 0 18px;font-weight:600;}
+  .panel h2 span{color:var(--text-faint);font-weight:400;font-size:12px;margin-left:6px;}
+
+  .field{margin-bottom:14px;}
+  .field label{display:block;font-size:12.5px;color:var(--text-dim);margin-bottom:6px;}
+  .field .hint{font-size:11px;color:var(--text-faint);margin-top:5px;line-height:1.5;}
+  input[type=text], input[type=number], input[type=password], select, textarea{
+    width:100%;background:var(--surface-2);border:1px solid var(--border);color:var(--text);
+    padding:9px 11px;border-radius:7px;font-size:13.5px;font-family:var(--font-ui);
+  }
+  textarea{resize:vertical;min-height:64px;line-height:1.5;}
+  input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent-dim);}
+  .row2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+
+  .btn-primary{
+    background:var(--accent);color:#1A1409;border:none;padding:11px 20px;border-radius:8px;
+    font-size:14px;font-weight:700;cursor:pointer;width:100%;font-family:var(--font-ui);
+    transition:filter .15s;
+  }
+  .btn-primary:hover{filter:brightness(1.08);}
+  .btn-primary:disabled{opacity:.5;cursor:not-allowed;}
+  .btn-ghost{
+    background:transparent;border:1px solid var(--border);color:var(--text-dim);
+    padding:8px 14px;border-radius:7px;font-size:12.5px;cursor:pointer;font-family:var(--font-ui);
+  }
+  .btn-ghost:hover{color:var(--text);border-color:var(--accent-dim);}
+
+  .output-box{
+    background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:14px;
+    font-size:13px;line-height:1.7;white-space:pre-wrap;min-height:220px;max-height:480px;overflow-y:auto;
+    font-family:var(--font-ui);
+  }
+  .output-actions{display:flex;gap:8px;margin-top:12px;}
+  .status-line{font-size:12px;color:var(--text-faint);margin-top:10px;font-family:var(--font-mono);}
+  .status-line.err{color:var(--danger);}
+  .status-line.ok{color:var(--ok);}
+
+  /* ---------- 히스토리 ---------- */
+  .history-list{margin-top:16px;display:flex;flex-direction:column;gap:8px;max-height:260px;overflow-y:auto;}
+  .history-item{
+    background:var(--surface-2);border:1px solid var(--border);border-radius:7px;padding:10px 12px;
+    cursor:pointer;font-size:12.5px;display:flex;justify-content:space-between;align-items:center;gap:8px;
+  }
+  .history-item:hover{border-color:var(--accent-dim);}
+  .history-item .meta{overflow:hidden;}
+  .history-item .meta .t{color:var(--text);font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .history-item .meta .s{color:var(--text-faint);font-family:var(--font-mono);font-size:10.5px;margin-top:2px;}
+  .history-item .del{color:var(--text-faint);cursor:pointer;font-size:14px;flex-shrink:0;}
+  .history-item .del:hover{color:var(--danger);}
+  .empty-note{color:var(--text-faint);font-size:12px;padding:8px 2px;}
+
+  /* ---------- 썸네일 미리보기 ---------- */
+  .image-box{
+    background:var(--surface-2);border:1px solid var(--border);border-radius:8px;
+    min-height:280px;display:flex;align-items:center;justify-content:center;overflow:hidden;
+  }
+  .image-box img{max-width:100%;max-height:420px;display:block;}
+  .image-box .placeholder{color:var(--text-faint);font-size:12.5px;padding:20px;text-align:center;}
+  .history-item.thumb{align-items:center;}
+  .history-item.thumb img{width:36px;height:36px;object-fit:cover;border-radius:5px;flex-shrink:0;margin-right:10px;}
+  .checkbox-row{display:flex;align-items:center;gap:8px;margin-bottom:14px;}
+  .checkbox-row input{width:auto;}
+  .checkbox-row label{font-size:12.5px;color:var(--text-dim);margin:0;}
+  .warn-note{
+    font-size:11px;color:var(--text-faint);background:var(--surface-2);border:1px solid var(--border);
+    padding:8px 10px;border-radius:6px;line-height:1.6;margin-top:-4px;margin-bottom:14px;
+  }
+
+  /* ---------- 설정 모달 ---------- */
+  .modal-backdrop{
+    position:fixed;inset:0;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;
+    z-index:100;padding:20px;
+  }
+  .modal{
+    background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:26px;
+    width:100%;max-width:460px;max-height:88vh;overflow-y:auto;
+  }
+  .modal h2{margin:0 0 4px;font-size:16px;}
+  .modal .sub{color:var(--text-dim);font-size:12.5px;margin:0 0 20px;line-height:1.6;}
+  .modal .close{position:absolute;}
+  .modal-foot{display:flex;justify-content:flex-end;gap:8px;margin-top:20px;}
+  .key-note{
+    font-size:11px;color:var(--text-faint);background:var(--surface-2);border:1px solid var(--border);
+    padding:10px 12px;border-radius:7px;line-height:1.6;margin-top:16px;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand" id="logoHome">
+    <span class="mark">[BOX]</span>
+    <span class="name">부업 툴박스</span>
+  </div>
+  <nav>
+    <button class="icon-btn" id="openSettings">API 키 설정</button>
+  </nav>
+</header>
+
+<main>
+
+  <!-- ================= 대시보드 ================= -->
+  <section id="view-dashboard">
+    <div class="dash-head">
+      <h1>오늘 쓸 툴을 골라주세요</h1>
+      <p>모든 데이터는 이 브라우저에만 저장됩니다. 서버로 전송되지 않아요.</p>
+    </div>
+    <div class="tool-grid">
+      <div class="tool-card" id="card-detailpage">
+        <div class="glyph">D</div>
+        <h3>쿠팡·네이버 상세페이지 제작기</h3>
+        <p>농수산물 도매 / 병행수입 / 사입 상품에 맞춘 상세페이지 초안을 AI로 생성합니다.</p>
+      </div>
+      <div class="tool-card" id="card-thumbnail">
+        <div class="glyph">T</div>
+        <h3>썸네일 생성기</h3>
+        <p>상품 정보와 스타일을 입력하면 AI로 썸네일 이미지 시안을 만들어줍니다.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= 툴: 상세페이지 제작기 ================= -->
+  <section id="view-detailpage" class="hidden">
+    <div class="back-link" id="backFromDetail">← 대시보드로</div>
+
+    <div class="tool-layout">
+      <!-- 입력 패널 -->
+      <div class="panel">
+        <h2>상품 정보 입력</h2>
+
+        <div class="field">
+          <label>사용할 AI 모델</label>
+          <select id="providerSelect">
+            <option value="openai">OpenAI (ChatGPT)</option>
+            <option value="gemini">Google Gemini</option>
+            <option value="grok">xAI Grok</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>모델명 <span style="color:var(--text-faint)">(필요 시 직접 수정)</span></label>
+          <input type="text" id="modelNameInput" value="gpt-4o-mini">
+        </div>
+
+        <div class="row2">
+          <div class="field">
+            <label>판매 플랫폼</label>
+            <select id="platformSelect">
+              <option value="coupang">쿠팡</option>
+              <option value="naver">네이버쇼핑(스마트스토어)</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>카테고리</label>
+            <select id="categorySelect">
+              <option value="wholesale">농수산물 도매</option>
+              <option value="parallel">병행수입</option>
+              <option value="sourcing">사입</option>
+              <option value="etc">기타</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="field">
+          <label>상품명</label>
+          <input type="text" id="productName" placeholder="예: 제주 감귤 3kg 가정용">
+        </div>
+
+        <div class="row2">
+          <div class="field">
+            <label>판매가</label>
+            <input type="text" id="price" placeholder="예: 15,900원">
+          </div>
+          <div class="field">
+            <label>원산지 / 제조국</label>
+            <input type="text" id="origin" placeholder="예: 국산(제주), 또는 미국">
+          </div>
+        </div>
+
+        <div class="field">
+          <label>중량 · 용량 · 규격</label>
+          <input type="text" id="spec" placeholder="예: 3kg (개당 오차 ±100g)">
+        </div>
+
+        <div class="field">
+          <label>배송 정보</label>
+          <input type="text" id="shipping" placeholder="예: 무료배송, 제주/도서산간 추가비용, 2~3일 내 발송">
+        </div>
+
+        <div class="field">
+          <label>핵심 셀링포인트</label>
+          <textarea id="sellingPoints" placeholder="예: 당도 12브릭스 이상, 당일 수확, 산지 직송"></textarea>
+        </div>
+
+        <div class="field">
+          <label>인증 · 신뢰 정보 <span style="color:var(--text-faint)">(선택)</span></label>
+          <textarea id="trustInfo" placeholder="예: 정품 인증 방법, 원산지 증명서, 통관 정보 등"></textarea>
+          <div class="hint" id="trustHint"></div>
+        </div>
+
+        <div class="field">
+          <label>기타 요청사항 <span style="color:var(--text-faint)">(선택)</span></label>
+          <textarea id="extraReq" placeholder="예: 조금 더 친근한 말투로, 재구매 유도 문구 추가"></textarea>
+        </div>
+
+        <button class="btn-primary" id="generateBtn">상세페이지 생성</button>
+        <div class="status-line" id="statusLine"></div>
+      </div>
+
+      <!-- 결과 패널 -->
+      <div class="panel">
+        <h2>생성 결과</h2>
+        <div class="output-box" id="outputBox">생성 버튼을 누르면 여기에 결과가 표시됩니다.</div>
+        <div class="output-actions">
+          <button class="btn-ghost" id="copyBtn">복사</button>
+          <button class="btn-ghost" id="saveBtn">저장</button>
+        </div>
+
+        <h2 style="margin-top:24px;">저장된 기록</h2>
+        <div class="history-list" id="historyList"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= 툴: 썸네일 생성기 ================= -->
+  <section id="view-thumbnail" class="hidden">
+    <div class="back-link" id="backFromThumbnail">← 대시보드로</div>
+
+    <div class="tool-layout">
+      <!-- 입력 패널 -->
+      <div class="panel">
+        <h2>썸네일 정보 입력</h2>
+
+        <div class="field">
+          <label>사용할 AI 모델</label>
+          <select id="imgProviderSelect">
+            <option value="openai">OpenAI (이미지 생성)</option>
+            <option value="grok">xAI Grok (이미지 생성)</option>
+            <option value="gemini">Google Gemini (이미지 생성)</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>모델명 <span style="color:var(--text-faint)">(필요 시 직접 수정)</span></label>
+          <input type="text" id="imgModelNameInput" value="gpt-image-1">
+        </div>
+
+        <div class="field">
+          <label>상품명 / 소재</label>
+          <input type="text" id="thumbProductName" placeholder="예: 제주 감귤 3kg">
+        </div>
+
+        <div class="row2">
+          <div class="field">
+            <label>스타일</label>
+            <select id="styleSelect">
+              <option value="minimal">미니멀 화이트 배경</option>
+              <option value="premium">프리미엄 다크무드</option>
+              <option value="colorful">컬러풀 팝세일</option>
+              <option value="natural">내추럴 우드톤</option>
+              <option value="custom">직접 입력</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>이미지 비율</label>
+            <select id="ratioSelect">
+              <option value="square">정사각형 (1:1)</option>
+              <option value="landscape">가로형 (4:3)</option>
+              <option value="wide">와이드 (16:9)</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="field" id="customStyleField" style="display:none;">
+          <label>스타일 직접 입력</label>
+          <input type="text" id="customStyleInput" placeholder="예: 빈티지 필름 느낌, 파스텔톤">
+        </div>
+
+        <div class="field">
+          <label>강조하고 싶은 요소</label>
+          <textarea id="thumbHighlight" placeholder="예: 신선함이 느껴지는 클로즈업, 가격 강조, 산지 이미지 연상"></textarea>
+        </div>
+
+        <div class="checkbox-row">
+          <input type="checkbox" id="includeTextCheck">
+          <label for="includeTextCheck">이미지 안에 문구 텍스트 삽입 시도</label>
+        </div>
+        <div class="warn-note">AI 이미지 생성 모델은 한글 텍스트를 정확히 그려내지 못하는 경우가 많습니다. 문구는 이미지 생성 후 별도 편집 툴로 얹는 걸 권장해요.</div>
+
+        <div class="field hidden" id="thumbTextField">
+          <label>삽입할 문구</label>
+          <input type="text" id="thumbTextInput" placeholder="예: 오늘출발 무료배송">
+        </div>
+
+        <button class="btn-primary" id="generateThumbBtn">썸네일 생성</button>
+        <div class="status-line" id="thumbStatusLine"></div>
+      </div>
+
+      <!-- 결과 패널 -->
+      <div class="panel">
+        <h2>생성 결과</h2>
+        <div class="image-box" id="imageBox">
+          <div class="placeholder">생성 버튼을 누르면 여기에 이미지가 표시됩니다.</div>
+        </div>
+        <div class="output-actions">
+          <button class="btn-ghost" id="downloadThumbBtn">다운로드</button>
+          <button class="btn-ghost" id="saveThumbBtn">저장</button>
+        </div>
+
+        <h2 style="margin-top:24px;">저장된 기록</h2>
+        <div class="history-list" id="thumbHistoryList"></div>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<!-- ================= 설정 모달 ================= -->
+<div class="modal-backdrop hidden" id="settingsModal">
+  <div class="modal">
+    <h2>API 키 설정</h2>
+    <p class="sub">사용할 모델사의 API 키를 입력하세요. 키는 이 브라우저의 localStorage에만 저장되고, 생성 시 해당 모델사 서버로만 직접 전송됩니다.</p>
+
+    <div class="field">
+      <label>OpenAI API 키</label>
+      <input type="password" id="key-openai" placeholder="sk-...">
+    </div>
+    <div class="field">
+      <label>Google Gemini API 키</label>
+      <input type="password" id="key-gemini" placeholder="AIza...">
+    </div>
+    <div class="field">
+      <label>xAI Grok API 키</label>
+      <input type="password" id="key-grok" placeholder="xai-...">
+    </div>
+
+    <div class="key-note">
+      · 이 파일을 더블클릭해서 여신 경우, 브라우저 보안 정책 때문에 API 호출이 막힐 수 있습니다.<br>
+      · 안 되면 이 파일이 있는 폴더에서 간단한 로컬 서버로 열어보세요. (예: 터미널에서 <code>python -m http.server</code> 실행 후 <code>localhost</code> 접속)
+    </div>
+
+    <div class="modal-foot">
+      <button class="btn-ghost" id="closeSettings">닫기</button>
+      <button class="btn-primary" style="width:auto;" id="saveSettings">저장</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  // ---------------- 상태/저장소 ----------------
+  const LS_KEYS = "toolbox_api_keys";
+  const LS_HISTORY = "toolbox_detailpage_history";
+  const LS_THUMB_HISTORY = "toolbox_thumbnail_history";
+
+  function loadKeys(){
+    try{ return JSON.parse(localStorage.getItem(LS_KEYS)) || {}; }catch(e){ return {}; }
+  }
+  function saveKeys(k){ localStorage.setItem(LS_KEYS, JSON.stringify(k)); }
+
+  function loadHistory(){
+    try{ return JSON.parse(localStorage.getItem(LS_HISTORY)) || []; }catch(e){ return []; }
+  }
+  function saveHistory(h){ localStorage.setItem(LS_HISTORY, JSON.stringify(h)); }
+
+  function loadThumbHistory(){
+    try{ return JSON.parse(localStorage.getItem(LS_THUMB_HISTORY)) || []; }catch(e){ return []; }
+  }
+  function saveThumbHistory(h){
+    try{
+      localStorage.setItem(LS_THUMB_HISTORY, JSON.stringify(h));
+      return true;
+    }catch(e){
+      return false; // 용량 초과 등
+    }
+  }
+
+  // ---------------- 화면 전환 ----------------
+  const viewDashboard = document.getElementById('view-dashboard');
+  const viewDetailpage = document.getElementById('view-detailpage');
+  const viewThumbnail = document.getElementById('view-thumbnail');
+
+  function showDashboard(){
+    viewDashboard.classList.remove('hidden');
+    viewDetailpage.classList.add('hidden');
+    viewThumbnail.classList.add('hidden');
+  }
+  function showDetailpage(){
+    viewDashboard.classList.add('hidden');
+    viewDetailpage.classList.remove('hidden');
+    viewThumbnail.classList.add('hidden');
+    renderHistory();
+  }
+  function showThumbnail(){
+    viewDashboard.classList.add('hidden');
+    viewDetailpage.classList.add('hidden');
+    viewThumbnail.classList.remove('hidden');
+    renderThumbHistory();
+  }
+
+  document.getElementById('card-detailpage').addEventListener('click', showDetailpage);
+  document.getElementById('card-thumbnail').addEventListener('click', showThumbnail);
+  document.getElementById('backFromDetail').addEventListener('click', showDashboard);
+  document.getElementById('backFromThumbnail').addEventListener('click', showDashboard);
+  document.getElementById('logoHome').addEventListener('click', showDashboard);
+
+  // ---------------- 설정 모달 ----------------
+  const settingsModal = document.getElementById('settingsModal');
+  document.getElementById('openSettings').addEventListener('click', () => {
+    const k = loadKeys();
+    document.getElementById('key-openai').value = k.openai || "";
+    document.getElementById('key-gemini').value = k.gemini || "";
+    document.getElementById('key-grok').value = k.grok || "";
+    settingsModal.classList.remove('hidden');
+  });
+  document.getElementById('closeSettings').addEventListener('click', () => settingsModal.classList.add('hidden'));
+  document.getElementById('saveSettings').addEventListener('click', () => {
+    saveKeys({
+      openai: document.getElementById('key-openai').value.trim(),
+      gemini: document.getElementById('key-gemini').value.trim(),
+      grok: document.getElementById('key-grok').value.trim(),
+    });
+    settingsModal.classList.add('hidden');
+  });
+
+  // 모델 선택 바뀌면 기본 모델명 자동 세팅
+  const defaultModelNames = {
+    openai: "gpt-4o-mini",
+    gemini: "gemini-2.0-flash",
+    grok: "grok-2-latest"
+  };
+  document.getElementById('providerSelect').addEventListener('change', (e) => {
+    document.getElementById('modelNameInput').value = defaultModelNames[e.target.value];
+  });
+
+  // 카테고리 바뀌면 인증정보 힌트 바꿔주기
+  const trustHints = {
+    wholesale: "예: 원산지 증명서, 농산물이력추적관리번호 등 (농수산물 원산지표시법상 원산지 표기는 필수입니다)",
+    parallel: "예: 정품 인증 방법(시리얼/홀로그램), 세관 신고필증, 정식수입원이 아님을 명시할 내용",
+    sourcing: "예: 공급처 인증서, 브랜드 정품 여부 — 상표권 관련 문구는 신중하게 작성하세요",
+    etc: ""
+  };
+  document.getElementById('categorySelect').addEventListener('change', (e) => {
+    document.getElementById('trustHint').textContent = trustHints[e.target.value] || "";
+  });
+  document.getElementById('trustHint').textContent = trustHints.wholesale;
+
+  // ---------------- 프롬프트(스킬) 구성 ----------------
+  const platformRules = {
+    coupang: `[쿠팡 상세페이지 작성 규칙]
+- "로켓배송", "로켓와우" 등 쿠팡 자체 배송 서비스 명칭은 실제 해당 사항이 없다면 절대 사용하지 마세요.
+- 최상급 표현(업계 1위, 100% 등)이나 의학적 효능 암시는 근거 없이 쓰지 마세요.
+- 실제 입력된 배송 정보만 사용하고, 임의로 배송 조건을 만들어내지 마세요.
+- 구조: [핵심 헤드카피] → [3줄 요약] → [상세 설명] → [신뢰 정보/원산지] → [배송 및 교환/반품 안내] → [자주 묻는 질문 3개]`,
+    naver: `[네이버쇼핑(스마트스토어) 상세페이지 작성 규칙]
+- 네이버 검색 노출에 도움이 되도록 상품명과 핵심 키워드를 본문 안에 자연스럽게 2~3회 반복하세요.
+- 과장/허위 광고 표현은 피하고, 입력된 사실 정보만 사용하세요.
+- 구조: [검색 키워드를 포함한 헤드카피] → [핵심 특징 요약] → [상세 설명] → [신뢰 정보/원산지] → [배송 및 교환/반품 안내] → [자주 묻는 질문 3개]`
+  };
+
+  const categoryRules = {
+    wholesale: `[농수산물 도매 카테고리 필수 사항]
+- "농수산물의 원산지 표시에 관한 법률"에 따라 원산지를 명확하고 눈에 띄게 표기하세요.
+- 신선식품 특성상 보관방법, 유통기한/소비기한, 중량 편차 가능성을 반드시 안내하세요.
+- 신선도와 산지 직송 느낌을 살리되, 확인 불가능한 효능(건강 효과 등)은 언급하지 마세요.`,
+    parallel: `[병행수입 카테고리 필수 사항]
+- "당사는 정식수입원(공식 수입사)이 아닌 병행수입 판매자입니다"라는 취지의 문구를 명확히 포함하세요.
+- 입력된 정품 인증 방법(있다면)을 안내하고, 없다면 일반적인 병행수입 정품 확인 방법을 안내하되 사실만 기술하세요.
+- 제조사 공식 A/S와 무관할 수 있음을 고지하세요.`,
+    sourcing: `[사입 카테고리 필수 사항]
+- 특정 브랜드의 상표/로고를 무단으로 사용하는 듯한 표현은 피하세요.
+- 공급처를 구체적으로 밝히지 않으면서도 신뢰를 줄 수 있는 품질 관련 문구를 사용하세요.
+- 재고/사이즈 등 변동 가능성이 있는 정보는 "상세페이지 내 옵션 참고" 식으로 유연하게 안내하세요.`,
+    etc: `[일반 카테고리]
+- 입력된 정보를 바탕으로 신뢰감 있고 설득력 있는 상세페이지를 작성하세요.`
+  };
+
+  function buildPrompt(){
+    const platform = document.getElementById('platformSelect').value;
+    const category = document.getElementById('categorySelect').value;
+
+    const data = {
+      productName: document.getElementById('productName').value.trim(),
+      price: document.getElementById('price').value.trim(),
+      origin: document.getElementById('origin').value.trim(),
+      spec: document.getElementById('spec').value.trim(),
+      shipping: document.getElementById('shipping').value.trim(),
+      sellingPoints: document.getElementById('sellingPoints').value.trim(),
+      trustInfo: document.getElementById('trustInfo').value.trim(),
+      extraReq: document.getElementById('extraReq').value.trim(),
+    };
+
+    const systemPrompt =
+`당신은 한국 이커머스(쿠팡/네이버쇼핑) 전문 상세페이지 카피라이터입니다.
+입력된 사실 정보만 사용해 상세페이지 초안을 작성하고, 없는 정보를 지어내지 마세요.
+결과는 바로 상세페이지에 옮겨 쓸 수 있도록 한국어로, 섹션 제목을 포함해 작성하세요.
+
+${platformRules[platform]}
+
+${categoryRules[category]}`;
+
+    const userPrompt =
+`다음 상품 정보로 상세페이지 초안을 작성해주세요.
+
+- 상품명: ${data.productName || "(미입력)"}
+- 판매가: ${data.price || "(미입력)"}
+- 원산지/제조국: ${data.origin || "(미입력)"}
+- 중량/용량/규격: ${data.spec || "(미입력)"}
+- 배송 정보: ${data.shipping || "(미입력)"}
+- 핵심 셀링포인트: ${data.sellingPoints || "(미입력)"}
+- 인증/신뢰 정보: ${data.trustInfo || "(없음)"}
+- 기타 요청사항: ${data.extraReq || "(없음)"}`;
+
+    return { systemPrompt, userPrompt, productName: data.productName, platform, category };
+  }
+
+  // ---------------- API 호출 ----------------
+  async function callOpenAI(apiKey, model, systemPrompt, userPrompt){
+    const res = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer " + apiKey
+      },
+      body: JSON.stringify({
+        model: model,
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: userPrompt }
+        ]
+      })
+    });
+    if(!res.ok){
+      const t = await res.text();
+      throw new Error("OpenAI 오류 (" + res.status + "): " + t.slice(0,300));
+    }
+    const data = await res.json();
+    return data.choices[0].message.content;
+  }
+
+  async function callGemini(apiKey, model, systemPrompt, userPrompt){
+    const url = "https://generativelanguage.googleapis.com/v1beta/models/" + encodeURIComponent(model) + ":generateContent?key=" + encodeURIComponent(apiKey);
+    const res = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        systemInstruction: { parts: [{ text: systemPrompt }] },
+        contents: [{ role: "user", parts: [{ text: userPrompt }] }]
+      })
+    });
+    if(!res.ok){
+      const t = await res.text();
+      throw new Error("Gemini 오류 (" + res.status + "): " + t.slice(0,300));
+    }
+    const data = await res.json();
+    return data.candidates[0].content.parts.map(p => p.text).join("");
+  }
+
+  async function callGrok(apiKey, model, systemPrompt, userPrompt){
+    const res = await fetch("https://api.x.ai/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer " + apiKey
+      },
+      body: JSON.stringify({
+        model: model,
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: userPrompt }
+        ]
+      })
+    });
+    if(!res.ok){
+      const t = await res.text();
+      throw new Error("Grok 오류 (" + res.status + "): " + t.slice(0,300));
+    }
+    const data = await res.json();
+    return data.choices[0].message.content;
+  }
+
+  // ---------------- 생성 버튼 ----------------
+  const statusLine = document.getElementById('statusLine');
+  const outputBox = document.getElementById('outputBox');
+  const generateBtn = document.getElementById('generateBtn');
+  let lastResult = null;
+
+  function setStatus(msg, kind){
+    statusLine.textContent = msg;
+    statusLine.className = "status-line" + (kind ? " " + kind : "");
+  }
+
+  generateBtn.addEventListener('click', async () => {
+    const provider = document.getElementById('providerSelect').value;
+    const modelName = document.getElementById('modelNameInput').value.trim();
+    const keys = loadKeys();
+    const apiKey = keys[provider];
+
+    if(!apiKey){
+      setStatus("먼저 우측 상단 'API 키 설정'에서 " + provider + " 키를 입력해주세요.", "err");
+      return;
+    }
+    const productNameVal = document.getElementById('productName').value.trim();
+    if(!productNameVal){
+      setStatus("상품명은 최소한 입력해주세요.", "err");
+      return;
+    }
+
+    const { systemPrompt, userPrompt, productName, platform, category } = buildPrompt();
+
+    generateBtn.disabled = true;
+    setStatus("생성 중입니다... (모델 응답을 기다리는 중)");
+    outputBox.textContent = "생성 중...";
+
+    try{
+      let text;
+      if(provider === "openai") text = await callOpenAI(apiKey, modelName, systemPrompt, userPrompt);
+      else if(provider === "gemini") text = await callGemini(apiKey, modelName, systemPrompt, userPrompt);
+      else text = await callGrok(apiKey, modelName, systemPrompt, userPrompt);
+
+      outputBox.textContent = text;
+      lastResult = { productName, platform, category, provider, modelName, text };
+      setStatus("생성 완료.", "ok");
+    }catch(err){
+      setStatus(err.message || String(err), "err");
+      outputBox.textContent = "생성에 실패했습니다. 위 오류 메시지를 확인해주세요.\n\n(파일을 더블클릭해서 열었다면, 로컬 서버로 실행해야 API 호출이 될 수 있습니다 — 설정 창의 안내를 참고하세요.)";
+    }finally{
+      generateBtn.disabled = false;
+    }
+  });
+
+  // ---------------- 복사 / 저장 ----------------
+  document.getElementById('copyBtn').addEventListener('click', () => {
+    const text = outputBox.textContent;
+    if(!text) return;
+    navigator.clipboard.writeText(text).then(() => setStatus("클립보드에 복사했습니다.", "ok"))
+      .catch(() => setStatus("복사에 실패했습니다. 직접 드래그해서 복사해주세요.", "err"));
+  });
+
+  document.getElementById('saveBtn').addEventListener('click', () => {
+    if(!lastResult){
+      setStatus("저장할 생성 결과가 없습니다.", "err");
+      return;
+    }
+    const history = loadHistory();
+    history.unshift({
+      ...lastResult,
+      savedAt: new Date().toISOString()
+    });
+    saveHistory(history.slice(0, 100)); // 최대 100개 보관
+    renderHistory();
+    setStatus("저장했습니다.", "ok");
+  });
+
+  // ---------------- 히스토리 렌더 ----------------
+  const platformLabel = { coupang: "쿠팡", naver: "네이버" };
+  const categoryLabel = { wholesale: "농수산물도매", parallel: "병행수입", sourcing: "사입", etc: "기타" };
+
+  function renderHistory(){
+    const list = document.getElementById('historyList');
+    const history = loadHistory();
+    list.innerHTML = "";
+    if(history.length === 0){
+      const empty = document.createElement('div');
+      empty.className = "empty-note";
+      empty.textContent = "아직 저장된 기록이 없습니다.";
+      list.appendChild(empty);
+      return;
+    }
+    history.forEach((item, idx) => {
+      const row = document.createElement('div');
+      row.className = "history-item";
+
+      const meta = document.createElement('div');
+      meta.className = "meta";
+      const t = document.createElement('div');
+      t.className = "t";
+      t.textContent = item.productName || "(제목 없음)";
+      const s = document.createElement('div');
+      s.className = "s";
+      const d = new Date(item.savedAt);
+      s.textContent = platformLabel[item.platform] + " · " + categoryLabel[item.category] + " · " + d.toLocaleString('ko-KR');
+      meta.appendChild(t); meta.appendChild(s);
+
+      const del = document.createElement('div');
+      del.className = "del";
+      del.textContent = "✕";
+      del.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const h = loadHistory();
+        h.splice(idx, 1);
+        saveHistory(h);
+        renderHistory();
+      });
+
+      row.addEventListener('click', () => {
+        outputBox.textContent = item.text;
+        lastResult = item;
+        setStatus("불러왔습니다: " + (item.productName || ""), "ok");
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      });
+
+      row.appendChild(meta);
+      row.appendChild(del);
+      list.appendChild(row);
+    });
+  }
+
+  renderHistory();
+
+  // ================= 썸네일 생성기 =================
+
+  const defaultImgModelNames = {
+    openai: "gpt-image-1",
+    gemini: "gemini-2.5-flash-image-preview",
+    grok: "grok-2-image"
+  };
+  document.getElementById('imgProviderSelect').addEventListener('change', (e) => {
+    document.getElementById('imgModelNameInput').value = defaultImgModelNames[e.target.value];
+  });
+
+  document.getElementById('styleSelect').addEventListener('change', (e) => {
+    document.getElementById('customStyleField').style.display = (e.target.value === 'custom') ? 'block' : 'none';
+  });
+  document.getElementById('includeTextCheck').addEventListener('change', (e) => {
+    document.getElementById('thumbTextField').classList.toggle('hidden', !e.target.checked);
+  });
+
+  const stylePresetText = {
+    minimal: "깨끗한 화이트 배경, 미니멀한 상품 컷 스타일, 자연광, 그림자 최소화",
+    premium: "짙은 다크 배경 위 고급스러운 조명, 프리미엄 브랜드 화보 느낌, 은은한 반사광",
+    colorful: "화사하고 대비가 강한 컬러 배경, 세일/이벤트 느낌의 팝아트 스타일",
+    natural: "우드톤 배경과 자연 소재 소품, 따뜻하고 내추럴한 라이프스타일 컷",
+  };
+
+  function buildThumbPrompt(){
+    const productName = document.getElementById('thumbProductName').value.trim();
+    const styleKey = document.getElementById('styleSelect').value;
+    const styleText = styleKey === 'custom'
+      ? document.getElementById('customStyleInput').value.trim()
+      : stylePresetText[styleKey];
+    const highlight = document.getElementById('thumbHighlight').value.trim();
+    const ratio = document.getElementById('ratioSelect').value;
+    const includeText = document.getElementById('includeTextCheck').checked;
+    const textContent = document.getElementById('thumbTextInput').value.trim();
+
+    let prompt = `한국 이커머스(쿠팡/네이버쇼핑) 상품 썸네일 이미지. 상품: ${productName || "미지정 상품"}. 스타일: ${styleText}.`;
+    if(highlight) prompt += ` 강조 요소: ${highlight}.`;
+    prompt += " 상품이 화면 중앙에 크고 선명하게 보이도록 구성. 실제 상품 사진처럼 사실적인 렌더링.";
+    if(includeText && textContent){
+      prompt += ` 이미지 안에 다음 한글 문구를 포함: "${textContent}".`;
+    } else {
+      prompt += " 이미지 안에 텍스트나 글자는 넣지 않음.";
+    }
+    return { prompt, productName, ratio, styleKey };
+  }
+
+  const ratioToOpenAISize = { square: "1024x1024", landscape: "1536x1024", wide: "1536x1024" };
+
+  async function callOpenAIImage(apiKey, model, prompt, ratio){
+    const res = await fetch("https://api.openai.com/v1/images/generations", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer " + apiKey
+      },
+      body: JSON.stringify({
+        model: model,
+        prompt: prompt,
+        size: ratioToOpenAISize[ratio] || "1024x1024",
+        n: 1
+      })
+    });
+    if(!res.ok){
+      const t = await res.text();
+      throw new Error("OpenAI 이미지 오류 (" + res.status + "): " + t.slice(0,300));
+    }
+    const data = await res.json();
+    const item = data.data[0];
+    if(item.b64_json) return "data:image/png;base64," + item.b64_json;
+    if(item.url) return item.url;
+    throw new Error("OpenAI 응답에서 이미지를 찾지 못했습니다.");
+  }
+
+  async function callGrokImage(apiKey, model, prompt){
+    const res = await fetch("https://api.x.ai/v1/images/generations", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer " + apiKey
+      },
+      body: JSON.stringify({
+        model: model,
+        prompt: prompt,
+        n: 1
+      })
+    });
+    if(!res.ok){
+      const t = await res.text();
+      throw new Error("Grok 이미지 오류 (" + res.status + "): " + t.slice(0,300));
+    }
+    const data = await res.json();
+    const item = data.data[0];
+    if(item.b64_json) return "data:image/png;base64," + item.b64_json;
+    if(item.url) return item.url;
+    throw new Error("Grok 응답에서 이미지를 찾지 못했습니다.");
+  }
+
+  async function callGeminiImage(apiKey, model, prompt){
+    const url = "https://generativelanguage.googleapis.com/v1beta/models/" + encodeURIComponent(model) + ":generateContent?key=" + encodeURIComponent(apiKey);
+    const res = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        contents: [{ role: "user", parts: [{ text: prompt }] }],
+        generationConfig: { responseModalities: ["TEXT", "IMAGE"] }
+      })
+    });
+    if(!res.ok){
+      const t = await res.text();
+      throw new Error("Gemini 이미지 오류 (" + res.status + "): " + t.slice(0,300));
+    }
+    const data = await res.json();
+    const parts = data.candidates[0].content.parts;
+    const imgPart = parts.find(p => p.inlineData);
+    if(!imgPart) throw new Error("Gemini 응답에서 이미지를 찾지 못했습니다. (모델이 이미지 생성을 지원하는지 확인해주세요)");
+    return "data:" + imgPart.inlineData.mimeType + ";base64," + imgPart.inlineData.data;
+  }
+
+  const imageBox = document.getElementById('imageBox');
+  const thumbStatusLine = document.getElementById('thumbStatusLine');
+  const generateThumbBtn = document.getElementById('generateThumbBtn');
+  let lastThumbResult = null;
+
+  function setThumbStatus(msg, kind){
+    thumbStatusLine.textContent = msg;
+    thumbStatusLine.className = "status-line" + (kind ? " " + kind : "");
+  }
+
+  generateThumbBtn.addEventListener('click', async () => {
+    const provider = document.getElementById('imgProviderSelect').value;
+    const modelName = document.getElementById('imgModelNameInput').value.trim();
+    const keys = loadKeys();
+    const apiKey = keys[provider];
+
+    if(!apiKey){
+      setThumbStatus("먼저 우측 상단 'API 키 설정'에서 " + provider + " 키를 입력해주세요.", "err");
+      return;
+    }
+    const { prompt, productName, ratio, styleKey } = buildThumbPrompt();
+    if(!productName){
+      setThumbStatus("상품명은 최소한 입력해주세요.", "err");
+      return;
+    }
+
+    generateThumbBtn.disabled = true;
+    setThumbStatus("생성 중입니다... (이미지 생성은 시간이 조금 더 걸릴 수 있어요)");
+    imageBox.innerHTML = '<div class="placeholder">생성 중...</div>';
+
+    try{
+      let imgSrc;
+      if(provider === "openai") imgSrc = await callOpenAIImage(apiKey, modelName, prompt, ratio);
+      else if(provider === "grok") imgSrc = await callGrokImage(apiKey, modelName, prompt);
+      else imgSrc = await callGeminiImage(apiKey, modelName, prompt);
+
+      imageBox.innerHTML = "";
+      const img = document.createElement('img');
+      img.src = imgSrc;
+      imageBox.appendChild(img);
+
+      lastThumbResult = { productName, provider, modelName, styleKey, imgSrc };
+      setThumbStatus("생성 완료.", "ok");
+    }catch(err){
+      setThumbStatus(err.message || String(err), "err");
+      imageBox.innerHTML = '<div class="placeholder">생성에 실패했습니다. 위 오류 메시지를 확인해주세요.<br>(파일을 더블클릭해서 열었다면 로컬 서버로 실행해야 할 수 있습니다)</div>';
+    }finally{
+      generateThumbBtn.disabled = false;
+    }
+  });
+
+  document.getElementById('downloadThumbBtn').addEventListener('click', () => {
+    if(!lastThumbResult){
+      setThumbStatus("다운로드할 이미지가 없습니다.", "err");
+      return;
+    }
+    const a = document.createElement('a');
+    a.href = lastThumbResult.imgSrc;
+    a.download = (lastThumbResult.productName || "thumbnail") + ".png";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+  });
+
+  document.getElementById('saveThumbBtn').addEventListener('click', () => {
+    if(!lastThumbResult){
+      setThumbStatus("저장할 생성 결과가 없습니다.", "err");
+      return;
+    }
+    const history = loadThumbHistory();
+    history.unshift({ ...lastThumbResult, savedAt: new Date().toISOString() });
+    const ok = saveThumbHistory(history.slice(0, 30)); // 이미지는 용량이 크므로 최대 30개만 보관
+    if(!ok){
+      setThumbStatus("저장 공간이 부족합니다. 오래된 기록을 삭제한 뒤 다시 시도해주세요.", "err");
+      return;
+    }
+    renderThumbHistory();
+    setThumbStatus("저장했습니다.", "ok");
+  });
+
+  const thumbStyleLabel = { minimal: "미니멀", premium: "프리미엄", colorful: "컬러풀", natural: "내추럴", custom: "커스텀" };
+
+  function renderThumbHistory(){
+    const list = document.getElementById('thumbHistoryList');
+    const history = loadThumbHistory();
+    list.innerHTML = "";
+    if(history.length === 0){
+      const empty = document.createElement('div');
+      empty.className = "empty-note";
+      empty.textContent = "아직 저장된 기록이 없습니다.";
+      list.appendChild(empty);
+      return;
+    }
+    history.forEach((item, idx) => {
+      const row = document.createElement('div');
+      row.className = "history-item thumb";
+
+      const img = document.createElement('img');
+      img.src = item.imgSrc;
+
+      const meta = document.createElement('div');
+      meta.className = "meta";
+      const t = document.createElement('div');
+      t.className = "t";
+      t.textContent = item.productName || "(제목 없음)";
+      const s = document.createElement('div');
+      s.className = "s";
+      const d = new Date(item.savedAt);
+      s.textContent = (thumbStyleLabel[item.styleKey] || "") + " · " + item.provider + " · " + d.toLocaleString('ko-KR');
+      meta.appendChild(t); meta.appendChild(s);
+
+      const del = document.createElement('div');
+      del.className = "del";
+      del.textContent = "✕";
+      del.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const h = loadThumbHistory();
+        h.splice(idx, 1);
+        saveThumbHistory(h);
+        renderThumbHistory();
+      });
+
+      row.addEventListener('click', () => {
+        imageBox.innerHTML = "";
+        const bigImg = document.createElement('img');
+        bigImg.src = item.imgSrc;
+        imageBox.appendChild(bigImg);
+        lastThumbResult = item;
+        setThumbStatus("불러왔습니다: " + (item.productName || ""), "ok");
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      });
+
+      row.appendChild(img);
+      row.appendChild(meta);
+      row.appendChild(del);
+      list.appendChild(row);
+    });
+  }
+
+})();
+</script>
+</body>
+</html>
