@@ -235,6 +235,7 @@
     <span class="name">부업 툴박스</span>
   </div>
   <nav>
+    <a class="icon-btn" href="https://datalab.naver.com/shoppingInsight/sCategory.naver" target="_blank" rel="noopener noreferrer" style="text-decoration:none;display:inline-flex;align-items:center;">네이버 데이터랩 ↗</a>
     <button class="icon-btn" id="openBackup">데이터 백업</button>
     <button class="icon-btn" id="openSettings">API 키 설정</button>
   </nav>
@@ -323,6 +324,7 @@
               <option value="wholesale">농수산물 도매</option>
               <option value="parallel">병행수입</option>
               <option value="sourcing">사입</option>
+              <option value="dropship">해외구매대행(무재고)</option>
               <option value="etc">기타</option>
             </select>
           </div>
@@ -1140,6 +1142,7 @@
     wholesale: "예: 원산지 증명서, 농산물이력추적관리번호 등 (농수산물 원산지표시법상 원산지 표기는 필수입니다)",
     parallel: "예: 정품 인증 방법(시리얼/홀로그램), 세관 신고필증, 정식수입원이 아님을 명시할 내용",
     sourcing: "예: 공급처 인증서, 브랜드 정품 여부 — 상표권 관련 문구는 신중하게 작성하세요",
+    dropship: "예: 배송 소요기간(통상 1~3주), 통관/관부가세 발생 가능 여부, 해외 배송 특성상 교환·반품 절차가 국내와 다를 수 있다는 안내",
     etc: ""
   };
   document.getElementById('categorySelect').addEventListener('change', (e) => {
@@ -1177,6 +1180,12 @@
 - 특정 브랜드의 상표/로고를 무단으로 사용하는 듯한 표현은 피하세요.
 - 공급처를 구체적으로 밝히지 않으면서도 신뢰를 줄 수 있는 품질 관련 문구를 사용하세요.
 - 재고/사이즈 등 변동 가능성이 있는 정보는 "상세페이지 내 옵션 참고" 식으로 유연하게 안내하세요.`,
+    dropship: `[해외구매대행(무재고) 카테고리 필수 사항]
+- 국내 재고 없이 주문 접수 후 해외에서 구매·발송하는 방식임을 명확히 고지하세요.
+- 국내 배송 대비 배송 기간이 길 수 있다는 점(통상 1~3주 등 입력된 정보 기준)을 안내하세요.
+- 통관/관부가세가 별도로 발생할 수 있다면 그 가능성을 안내하세요 (구체적 금액은 지어내지 마세요).
+- 해외 배송 특성상 교환/반품 절차와 비용이 국내 배송과 다를 수 있음을 안내하세요.
+- "정식 수입원/제조사가 아닌 구매대행 판매자"라는 취지를 명확히 포함하세요.`,
     etc: `[일반 카테고리]
 - 입력된 정보를 바탕으로 신뢰감 있고 설득력 있는 상세페이지를 작성하세요.`
   };
@@ -1365,7 +1374,7 @@ ${categoryRules[category]}`;
 
   // ---------------- 히스토리 렌더 ----------------
   const platformLabel = { coupang: "쿠팡", naver: "네이버" };
-  const categoryLabel = { wholesale: "농수산물도매", parallel: "병행수입", sourcing: "사입", etc: "기타" };
+  const categoryLabel = { wholesale: "농수산물도매", parallel: "병행수입", sourcing: "사입", dropship: "해외구매대행", etc: "기타" };
 
   function renderHistory(){
     const list = document.getElementById('historyList');
