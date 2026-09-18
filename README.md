@@ -3,9 +3,16 @@
 쿠팡/네이버쇼핑 셀러(농수산물 도매, 병행수입, 사입)를 위한 개인용 툴 대시보드.
 단일 HTML 파일 + localStorage 기반, 서버 없음.
 
+## 배포
+
+- **배포 주소**: https://ndh3954-prog.github.io/shopping-toolbox/ (GitHub Pages, `main` 브랜치 `/ (root)`)
+- 저장소: https://github.com/ndh3954-prog/shopping-toolbox
+- 로컬 프로젝트 폴더: `~/shopping-toolbox` (main 파일은 `index.html`)
+- 수정할 때: `~/shopping-toolbox/index.html`을 고쳐서 커밋 후 `git push` 하면 1~2분 내 위 주소에 자동 반영됨
+
 ## 현재 상태
 
-- `shopping-toolbox.html` — 지금까지 완성된 버전
+- `index.html` — 지금까지 완성된 버전
 - 대시보드에서 툴 2개 실행 가능:
   1. **상세페이지 제작기** — 플랫폼(쿠팡/네이버) x 카테고리(농수산물도매/병행수입/사입/기타)별 규칙이 내장된 프롬프트로 상세페이지 초안 생성
   2. **썸네일 생성기** — 스타일 프리셋 기반 이미지 프롬프트로 썸네일 이미지 생성
@@ -21,7 +28,7 @@
 
 ## 다음에 고려할 것
 
-- 정적 호스팅 배포 (GitHub Pages / Netlify / Vercel) → 고정 URL 확보 시 API 키가 매번 초기화되는 문제 해결
+- ~~정적 호스팅 배포~~ → 완료 (GitHub Pages, 위 배포 주소 참고)
 - 상세페이지 프롬프트 품질 다듬기 (카테고리별 규칙 실사용 테스트 필요)
 - 이미지 생성 모델명은 세 회사 모두 자주 바뀌므로, 실제 테스트하면서 최신 모델 ID로 업데이트 필요
 - 데이터 export/import (JSON) — 아직 미구현
